@@ -67,7 +67,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: "test-key-not-used"
           API_KEY: "test-api-key"
-        run: pytest tests/ -v -p no:cacheprovider --no-cov
+        run: pytest tests/ -v -o addopts=""
 
   # ---------------------------------------------------------------------------
   # 3. Docker build (proves the image builds in a clean environment)
