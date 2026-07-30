@@ -11,12 +11,14 @@ whenever those documents change.
 
 What it does, per file:
   1. Read the markdown text
-  2. Split by markdown headers  → captures the section name as metadata
+  2. Split by markdown headers  -> captures the section name as metadata
   3. Split large sections into ~chunk_size pieces with overlap
   4. Delete any existing chunks for this file (idempotent re-ingest)
   5. Embed all chunks and store them in Chroma with metadata
 
 Idempotent: re-running replaces a file's chunks instead of duplicating.
+After ingesting, the semantic cache is invalidated so stale answers are
+never served against updated documents.
 """
 
 import sys
@@ -141,6 +143,16 @@ def main() -> None:
     print(f"\nDone. {total_chunks} chunks stored across {len(files)} documents.")
     print(f"Vector store total: {store.count()} chunks.")
     print(f"Persisted to: {settings.chroma_persist_directory}/")
+
+    # Invalidate the semantic cache so stale answers are never served
+    # against the freshly-updated documents. No-op if Redis isn't running.
+    try:
+        from app.services.cache import get_cache
+
+        get_cache().invalidate()
+        print("Semantic cache invalidated (generation bumped).")
+    except Exception as exc:  # noqa: BLE001
+        print(f"Cache invalidation skipped: {exc}")
 
 
 if __name__ == "__main__":

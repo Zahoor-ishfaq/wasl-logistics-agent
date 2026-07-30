@@ -19,3 +19,5 @@ ragas
 pytest
 ruff
 mypy
+redis
+numpy

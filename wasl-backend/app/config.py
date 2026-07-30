@@ -78,6 +78,19 @@ class Settings(BaseSettings):
     # Range: 0.0 (keep everything) to 1.0 (keep only exact matches).
     # 0.3 is a reasonable starting point; tune against eval scores.
     retrieval_min_score: float = 0.3
+    
+    # ------------------------------------------------------------------
+    # Semantic cache (Redis)
+    # ------------------------------------------------------------------
+    cache_enabled: bool = True
+    redis_host: str = "localhost"
+    redis_port: int = 6379
+    redis_db: int = 0
+    # Cosine similarity at/above which a cached answer is reused.
+    # 0.95 is deliberately strict so only near-identical questions hit.
+    cache_similarity_threshold: float = 0.95
+    # How long a cached answer lives (seconds). 24h default.
+    cache_ttl_seconds: int = 86400
 
     # ------------------------------------------------------------------
     # Document ingestion
