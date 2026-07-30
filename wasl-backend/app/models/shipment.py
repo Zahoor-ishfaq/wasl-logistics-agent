@@ -27,14 +27,14 @@ from pydantic import BaseModel, Field
 class ShipmentStatus(str, Enum):
     """Current state of the shipment in the logistics pipeline."""
 
-    pending = "pending"                  # accepted, not yet dispatched
-    in_transit = "in_transit"            # moving toward destination
-    at_customs = "at_customs"            # at a Saudi port awaiting clearance
-    held = "held"                        # stopped — exception in progress
+    pending = "pending"  # accepted, not yet dispatched
+    in_transit = "in_transit"  # moving toward destination
+    at_customs = "at_customs"  # at a Saudi port awaiting clearance
+    held = "held"  # stopped — exception in progress
     out_for_delivery = "out_for_delivery"
     delivered = "delivered"
     failed_delivery = "failed_delivery"  # attempt made, consignee not reached
-    returned = "returned"                # sent back to origin
+    returned = "returned"  # sent back to origin
 
 
 class ExceptionType(str, Enum):
@@ -45,11 +45,11 @@ class ExceptionType(str, Enum):
     different investigation path and a different draft action type.
     """
 
-    none = "none"                    # no exception
-    customs_hold = "customs_hold"    # Scenario A — ZATCA documentation issue
+    none = "none"  # no exception
+    customs_hold = "customs_hold"  # Scenario A — ZATCA documentation issue
     holiday_closure = "holiday_closure"  # Scenario B — expected, not escalated
-    cross_border = "cross_border"    # Scenario C — GCC border, unclear cause
-    supplier_delay = "supplier_delay"    # Scenario D — upstream vendor failure
+    cross_border = "cross_border"  # Scenario C — GCC border, unclear cause
+    supplier_delay = "supplier_delay"  # Scenario D — upstream vendor failure
     carrier_delay = "carrier_delay"  # operational delay, carrier fault
     failed_delivery = "failed_delivery"  # consignee not available
 

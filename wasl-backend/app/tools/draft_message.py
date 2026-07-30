@@ -29,7 +29,6 @@ from app.models.shipment import Shipment
 from app.models.state import DraftedAction, SLAStatus
 from app.services.llm import get_llm_service
 
-
 _DRAFT_SYSTEM_PROMPT = """You are Wasl, a logistics operations assistant.
 
 You draft clear, professional messages about shipment exceptions for a
@@ -69,9 +68,7 @@ class DraftMessageInput(BaseModel):
 def _format_policy(citations: list[Citation]) -> str:
     if not citations:
         return "(no specific policy retrieved)"
-    return "\n".join(
-        f"- ({c.source}) {c.snippet[:200]}" for c in citations
-    )
+    return "\n".join(f"- ({c.source}) {c.snippet[:200]}" for c in citations)
 
 
 def _format_sla(sla: SLAStatus | None) -> str:

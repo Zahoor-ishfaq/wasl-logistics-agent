@@ -27,10 +27,10 @@ from __future__ import annotations
 
 import functools
 import re
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from app.config import settings
-
 
 # ---------------------------------------------------------------------------
 # Client bootstrap (lazy, optional)
@@ -53,9 +53,11 @@ def _get_client():
         return None
 
     try:
-        from langfuse import get_client
         # The SDK reads keys from env vars; ensure they're present.
         import os
+
+        from langfuse import get_client
+
         os.environ.setdefault("LANGFUSE_PUBLIC_KEY", pub)
         os.environ.setdefault("LANGFUSE_SECRET_KEY", sec)
         os.environ.setdefault(
@@ -91,7 +93,10 @@ _PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"sk-ant-[A-Za-z0-9\-_]{10,}"), "[REDACTED_ANTHROPIC_KEY]"),
     (re.compile(r"sk-lf-[A-Za-z0-9\-_]{6,}"), "[REDACTED_LANGFUSE_KEY]"),
     (re.compile(r"pk-lf-[A-Za-z0-9\-_]{6,}"), "[REDACTED_LANGFUSE_KEY]"),
-    (re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}"), "[REDACTED_EMAIL]"),
+    (
+        re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}"),
+        "[REDACTED_EMAIL]",
+    ),
     # Phone numbers: +country and 9+ digit runs (covers Saudi +9665XXXXXXXX)
     (re.compile(r"\+\d[\d\s\-]{8,}\d"), "[REDACTED_PHONE]"),
     (re.compile(r"\b\d{9,}\b"), "[REDACTED_NUMBER]"),
@@ -125,6 +130,7 @@ def observe(name: str | None = None) -> Callable:
         @observe("lookup_shipment")
         def lookup_shipment(state): ...
     """
+
     def decorator(func: Callable) -> Callable:
         if not is_enabled():
             return func

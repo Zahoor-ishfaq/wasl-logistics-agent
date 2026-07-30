@@ -37,7 +37,6 @@ if str(PROJECT_ROOT) not in sys.path:
 from app.agent.graph import build_graph  # noqa: E402
 from app.models.state import AgentState  # noqa: E402
 
-
 DEFAULT_SHIPMENT = "WSL-20260310-0042"
 
 

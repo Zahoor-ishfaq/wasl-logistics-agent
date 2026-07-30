@@ -25,7 +25,6 @@ from app.rag.prompt import SYSTEM_PROMPT, build_user_prompt
 from app.rag.retriever import get_retriever
 from app.services.llm import get_llm_service
 
-
 # The message returned when the knowledge base has no relevant content.
 _DECLINE_MESSAGE = (
     "I don't have information about that in the knowledge base. "

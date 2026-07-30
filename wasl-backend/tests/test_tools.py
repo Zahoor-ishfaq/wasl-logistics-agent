@@ -9,9 +9,8 @@ import pytest
 from pydantic import ValidationError
 
 from app.models.shipment import ExceptionType, Shipment, ShipmentNotFound
-from app.tools.shipment_lookup import shipment_lookup
 from app.tools.policy_search import PolicySearchInput
-from app.tools.compute_eta import ComputeEtaInput
+from app.tools.shipment_lookup import shipment_lookup
 
 
 class TestInputValidation:

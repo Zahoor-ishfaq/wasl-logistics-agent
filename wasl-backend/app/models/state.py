@@ -25,10 +25,10 @@ from pydantic import BaseModel, Field
 from app.models.answer import Citation
 from app.models.shipment import ExceptionType, Shipment
 
-
 # ---------------------------------------------------------------------------
 # Supporting models
 # ---------------------------------------------------------------------------
+
 
 class TraceEvent(BaseModel):
     """
@@ -226,9 +226,7 @@ class DraftedAction(BaseModel):
     approved: bool | None = Field(
         default=None,
         description=(
-            "None = awaiting decision. "
-            "True = human approved. "
-            "False = human rejected."
+            "None = awaiting decision. True = human approved. False = human rejected."
         ),
     )
 
@@ -240,6 +238,7 @@ class DraftedAction(BaseModel):
 
 class ApprovalStatus(str):
     """Possible states of the human approval gate."""
+
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
@@ -248,6 +247,7 @@ class ApprovalStatus(str):
 # ---------------------------------------------------------------------------
 # The main state object
 # ---------------------------------------------------------------------------
+
 
 class AgentState(BaseModel):
     """

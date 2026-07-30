@@ -84,7 +84,9 @@ def main() -> None:
 
     print("-" * 56)
     if regressed:
-        print(f"\nFAIL: {len(regressed)} metric(s) regressed beyond tolerance ({TOLERANCE}).")
+        print(
+            f"\nFAIL: {len(regressed)} metric(s) regressed beyond tolerance ({TOLERANCE})."
+        )
         for key, bv, lv, delta in regressed:
             print(f"  {key}: {bv:.3f} -> {lv:.3f} ({delta:+.3f})")
         sys.exit(1)

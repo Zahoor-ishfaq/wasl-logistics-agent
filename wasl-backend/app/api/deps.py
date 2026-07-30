@@ -13,7 +13,6 @@ from slowapi.util import get_remote_address
 
 from app.config import settings
 
-
 # ---------------------------------------------------------------------------
 # Rate limiter (slowapi)
 # ---------------------------------------------------------------------------

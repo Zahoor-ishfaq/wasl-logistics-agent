@@ -47,7 +47,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     anthropic_api_key: str = Field(..., description="Anthropic API key — required")
     anthropic_model: str = "claude-sonnet-4-6"
-    llm_temperature: float = 0.0          # deterministic for RAG and agent reasoning
+    llm_temperature: float = 0.0  # deterministic for RAG and agent reasoning
     llm_max_tokens: int = 2048
 
     # Daily cost cap in USD. Requests are rejected once this is exceeded.
@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     # sentence-transformers model — runs locally, no API key needed.
     # all-MiniLM-L6-v2 is small (~80MB), fast on CPU, good quality.
     embedding_model: str = "all-MiniLM-L6-v2"
-    embedding_dimension: int = 384          # must match the model above
+    embedding_dimension: int = 384  # must match the model above
 
     # ------------------------------------------------------------------
     # Vector store (Chroma)
@@ -87,7 +87,7 @@ class Settings(BaseSettings):
     # Chunk size in tokens (approximate — splitter uses characters).
     # 500 tokens ≈ 2000 characters for English prose.
     chunk_size: int = 2000
-    chunk_overlap: int = 200              # ~50 tokens overlap between chunks
+    chunk_overlap: int = 200  # ~50 tokens overlap between chunks
 
     # ------------------------------------------------------------------
     # Mock shipment data
@@ -99,7 +99,9 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # The API key clients must send in the X-API-Key header.
     # Use a strong random string in production.
-    api_key: str = Field(..., description="API key for authenticating clients — required")
+    api_key: str = Field(
+        ..., description="API key for authenticating clients — required"
+    )
 
     # Rate limiting: max requests per minute per IP address
     rate_limit_per_minute: int = 30

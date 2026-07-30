@@ -157,11 +157,14 @@ class LLMService:
         # No-op if Langfuse isn't configured.
         try:
             from app.observability.tracing import trace_generation
+
             usage = getattr(response, "usage_metadata", None) or {}
             trace_generation(
                 name="llm.complete",
                 model=settings.anthropic_model,
-                prompt=prompt if not system else f"[system]\n{system}\n\n[user]\n{prompt}",
+                prompt=prompt
+                if not system
+                else f"[system]\n{system}\n\n[user]\n{prompt}",
                 response=text,
                 input_tokens=usage.get("input_tokens"),
                 output_tokens=usage.get("output_tokens"),

@@ -23,7 +23,7 @@ needed.
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -31,8 +31,8 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.config import settings  # noqa: E402
-from app.rag.service import get_rag_service  # noqa: E402
 from app.rag.retriever import get_retriever  # noqa: E402
+from app.rag.service import get_rag_service  # noqa: E402
 
 GOLDEN = Path(__file__).resolve().parent / "golden_set.jsonl"
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
@@ -71,34 +71,43 @@ def score_with_ragas(samples: list[dict]) -> dict | None:
     Each sample: {question, answer, contexts: list[str]}
     """
     try:
-        from ragas import evaluate
-        from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
-        from ragas.metrics import Faithfulness, ResponseRelevancy, LLMContextPrecisionWithoutReference
-        from ragas.llms import LangchainLLMWrapper
-        from ragas.embeddings import LangchainEmbeddingsWrapper
         from langchain_anthropic import ChatAnthropic
         from langchain_community.embeddings import HuggingFaceEmbeddings
+        from ragas import evaluate
+        from ragas.dataset_schema import EvaluationDataset, SingleTurnSample
+        from ragas.embeddings import LangchainEmbeddingsWrapper
+        from ragas.llms import LangchainLLMWrapper
+        from ragas.metrics import (
+            Faithfulness,
+            LLMContextPrecisionWithoutReference,
+            ResponseRelevancy,
+        )
     except ImportError as exc:
         print(f"[eval] RAGAS not available ({exc}); skipping RAGAS metrics.")
         return None
 
-    judge = LangchainLLMWrapper(ChatAnthropic(
-        model=settings.anthropic_model,
-        api_key=settings.anthropic_api_key,
-        temperature=0.0,
-        max_tokens=1024,
-    ))
+    judge = LangchainLLMWrapper(
+        ChatAnthropic(
+            model=settings.anthropic_model,
+            api_key=settings.anthropic_api_key,
+            temperature=0.0,
+            max_tokens=1024,
+        )
+    )
     embed = LangchainEmbeddingsWrapper(
         HuggingFaceEmbeddings(model_name=settings.embedding_model)
     )
 
-    ds = EvaluationDataset(samples=[
-        SingleTurnSample(
-            user_input=s["question"],
-            response=s["answer"],
-            retrieved_contexts=s["contexts"],
-        ) for s in samples
-    ])
+    ds = EvaluationDataset(
+        samples=[
+            SingleTurnSample(
+                user_input=s["question"],
+                response=s["answer"],
+                retrieved_contexts=s["contexts"],
+            )
+            for s in samples
+        ]
+    )
 
     metrics = [
         Faithfulness(llm=judge),
@@ -133,11 +142,17 @@ def run_rag_case(case: dict) -> dict:
     source_hit = bool(want_sources & got_sources) if want_sources else True
 
     return {
-        "id": case["id"], "type": "rag", "answered": ans.answered,
+        "id": case["id"],
+        "type": "rag",
+        "answered": ans.answered,
         "keyword_coverage": round(coverage, 3),
         "source_hit": source_hit,
         "passed": ans.answered and coverage >= 0.5 and source_hit,
-        "_ragas_sample": {"question": case["question"], "answer": ans.text, "contexts": contexts},
+        "_ragas_sample": {
+            "question": case["question"],
+            "answer": ans.text,
+            "contexts": contexts,
+        },
     }
 
 
@@ -145,7 +160,8 @@ def run_decline_case(case: dict) -> dict:
     ans = get_rag_service().answer_text(case["question"])
     # Must decline: answered == False.
     return {
-        "id": case["id"], "type": "decline",
+        "id": case["id"],
+        "type": "decline",
         "answered": ans.answered,
         "passed": ans.answered is False,
     }
@@ -168,10 +184,13 @@ def run_agent_case(case: dict) -> dict:
         exception = exception.split(".")[-1]
 
     action_ok = took_action == case["expected_action"]
-    recipient_ok = (recipient == case["expected_recipient"]) if case["expected_action"] else True
+    recipient_ok = (
+        (recipient == case["expected_recipient"]) if case["expected_action"] else True
+    )
 
     return {
-        "id": case["id"], "type": "agent",
+        "id": case["id"],
+        "type": "agent",
         "detected_exception": exception,
         "took_action": took_action,
         "recipient": recipient,
@@ -218,15 +237,19 @@ def main() -> None:
             by_type[t] = {
                 "total": len(subset),
                 "passed": sum(1 for r in subset if r["passed"]),
-                "pass_rate": round(sum(1 for r in subset if r["passed"]) / len(subset), 3),
+                "pass_rate": round(
+                    sum(1 for r in subset if r["passed"]) / len(subset), 3
+                ),
             }
 
     summary = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "model": settings.anthropic_model,
         "total_cases": len(results),
         "total_passed": sum(1 for r in results if r["passed"]),
-        "overall_pass_rate": round(sum(1 for r in results if r["passed"]) / len(results), 3),
+        "overall_pass_rate": round(
+            sum(1 for r in results if r["passed"]) / len(results), 3
+        ),
         "by_type": by_type,
         "ragas": ragas_scores,
         "cases": results,
@@ -239,8 +262,10 @@ def main() -> None:
     print("\n" + "=" * 56)
     print("EVALUATION SUMMARY")
     print("=" * 56)
-    print(f"Overall: {summary['total_passed']}/{summary['total_cases']} "
-          f"({summary['overall_pass_rate'] * 100:.0f}%)")
+    print(
+        f"Overall: {summary['total_passed']}/{summary['total_cases']} "
+        f"({summary['overall_pass_rate'] * 100:.0f}%)"
+    )
     for t, s in by_type.items():
         print(f"  {t:8s}: {s['passed']}/{s['total']} ({s['pass_rate'] * 100:.0f}%)")
     if ragas_scores:

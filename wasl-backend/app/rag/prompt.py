@@ -77,9 +77,7 @@ def build_context(citations: list) -> str:
     blocks: list[str] = []
     for i, c in enumerate(citations, start=1):
         section = f" — {c.section}" if c.section else ""
-        blocks.append(
-            f"[{i}] (source: {c.source}{section})\n{c.snippet}"
-        )
+        blocks.append(f"[{i}] (source: {c.source}{section})\n{c.snippet}")
     return "\n\n".join(blocks)
 
 

@@ -103,8 +103,7 @@ async def upload_document(request: Request, file: UploadFile) -> dict:
     ids = [f"{filename}::chunk_{i}" for i in range(len(chunks))]
     texts = [c["text"] for c in chunks]
     metadatas = [
-        {"source": filename, "section": c["section"], "page": 0}
-        for c in chunks
+        {"source": filename, "section": c["section"], "page": 0} for c in chunks
     ]
     store.add(ids=ids, texts=texts, metadatas=metadatas)
 

@@ -19,13 +19,12 @@ This is why Scenario B (holiday closure) must NOT be treated as an
 urgent breach — the calculator removes the holiday days first.
 """
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 from pydantic import BaseModel, Field
 
 from app.models.shipment import Shipment
 from app.models.state import SLAStatus
-
 
 # ---------------------------------------------------------------------------
 # Saudi public holidays 2026 (from holiday_schedule.md).
@@ -35,10 +34,10 @@ from app.models.state import SLAStatus
 # calendar service or the holiday document itself.
 # ---------------------------------------------------------------------------
 SAUDI_HOLIDAYS_2026: list[tuple[date, date]] = [
-    (date(2026, 2, 22), date(2026, 2, 22)),   # Founding Day
-    (date(2026, 3, 19), date(2026, 3, 22)),   # Eid al-Fitr
-    (date(2026, 5, 26), date(2026, 5, 30)),   # Day of Arafat + Eid al-Adha
-    (date(2026, 9, 23), date(2026, 9, 23)),   # National Day
+    (date(2026, 2, 22), date(2026, 2, 22)),  # Founding Day
+    (date(2026, 3, 19), date(2026, 3, 22)),  # Eid al-Fitr
+    (date(2026, 5, 26), date(2026, 5, 30)),  # Day of Arafat + Eid al-Adha
+    (date(2026, 9, 23), date(2026, 9, 23)),  # National Day
 ]
 
 
@@ -112,7 +111,7 @@ def compute_eta(shipment: Shipment, now: datetime | None = None) -> SLAStatus:
     # Validate input shape.
     ComputeEtaInput(shipment=shipment)
 
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
 
     # No SLA terms → nothing to compute.
     if shipment.sla is None:
@@ -176,5 +175,5 @@ def _as_utc(dt: datetime) -> datetime:
     when mixing datetimes from JSON (which may be naive) and now().
     """
     if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)

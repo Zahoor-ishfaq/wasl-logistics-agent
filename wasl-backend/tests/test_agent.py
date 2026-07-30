@@ -10,8 +10,6 @@ free, and deterministic. We check the three critical paths:
 
 from unittest.mock import patch
 
-import pytest
-
 import app.agent.nodes as nodes
 import app.tools.draft_message as dm
 from app.agent.graph import build_graph
@@ -21,6 +19,7 @@ from app.models.state import AgentState
 
 class _FakeLLM:
     """Returns ACTION/NO_ACTION for the assess node, prose otherwise."""
+
     def __init__(self, decision="ACTION"):
         self.decision = decision
 
@@ -30,16 +29,24 @@ class _FakeLLM:
         return "Drafted message body for test."
 
 
-_FAKE_CITES = [Citation(source="delayed_shipments_policy.md", section="Cat A",
-                        snippet="...", similarity_score=0.7)]
+_FAKE_CITES = [
+    Citation(
+        source="delayed_shipments_policy.md",
+        section="Cat A",
+        snippet="...",
+        similarity_score=0.7,
+    )
+]
 
 
 def _run(shipment_id, decision):
     graph = build_graph()
     llm = _FakeLLM(decision)
-    with patch.object(nodes, "get_llm_service", lambda: llm), \
-         patch.object(dm, "get_llm_service", lambda: llm), \
-         patch.object(nodes, "policy_search", lambda **k: _FAKE_CITES):
+    with (
+        patch.object(nodes, "get_llm_service", lambda: llm),
+        patch.object(dm, "get_llm_service", lambda: llm),
+        patch.object(nodes, "policy_search", lambda **k: _FAKE_CITES),
+    ):
         cfg = {"configurable": {"thread_id": f"test-{shipment_id}-{decision}"}}
         graph.invoke(AgentState(shipment_id=shipment_id), cfg)
         return graph, cfg

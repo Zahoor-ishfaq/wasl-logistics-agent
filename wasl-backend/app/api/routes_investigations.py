@@ -76,17 +76,23 @@ def _state_response(values: dict) -> dict:
         "exception_type": values.get("exception_type", "none"),
         "approval_status": values.get("approval_status", "pending"),
         "summary": values.get("summary", ""),
-        "assessment": None if assessment is None else {
+        "assessment": None
+        if assessment is None
+        else {
             "urgency": assessment.urgency,
             "recommended_action_type": assessment.recommended_action_type,
             "summary": assessment.summary,
         },
-        "sla_status": None if sla is None or not sla.sla_applies else {
+        "sla_status": None
+        if sla is None or not sla.sla_applies
+        else {
             "already_breached": sla.already_breached,
             "hours_until_breach": sla.hours_until_breach,
             "penalty_if_breached_sar": sla.penalty_if_breached_sar,
         },
-        "drafted_action": None if draft is None else {
+        "drafted_action": None
+        if draft is None
+        else {
             "recipient_type": draft.recipient_type,
             "recipient_label": draft.recipient_label,
             "subject": draft.subject,

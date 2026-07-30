@@ -37,7 +37,6 @@ from langchain_text_splitters import (  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.services.vector_store import get_vector_store  # noqa: E402
 
-
 # Markdown headers we split on. The section name is stored in metadata
 # so citations can tell the user which section an answer came from.
 HEADERS_TO_SPLIT_ON = [
@@ -106,10 +105,7 @@ def ingest_file(path: Path, store) -> int:
 
     ids = [f"{source}::chunk_{i}" for i in range(len(chunks))]
     texts = [c["text"] for c in chunks]
-    metadatas = [
-        {"source": source, "section": c["section"], "page": 0}
-        for c in chunks
-    ]
+    metadatas = [{"source": source, "section": c["section"], "page": 0} for c in chunks]
 
     store.add(ids=ids, texts=texts, metadatas=metadatas)
     return len(chunks)

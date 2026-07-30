@@ -74,7 +74,11 @@ select = [
     "UP",  # pyupgrade
 ]
 ignore = [
-    "B008", # do not perform function calls in argument defaults (FastAPI uses this)
+    "B008",  # FastAPI uses function calls in argument defaults
+    "E501",  # long lines in docstrings/examples — cosmetic
+    "B904",  # raise ... from — style preference
+    "B905",  # zip() strict= — style preference
+    "UP042", # str+Enum is fine, don't force StrEnum
 ]
 
 [tool.ruff.lint.isort]

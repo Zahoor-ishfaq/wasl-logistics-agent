@@ -26,22 +26,21 @@ the LLM decides at two specific points.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from app.observability.tracing import observe
-from app.models.shipment import ExceptionType, Shipment, ShipmentNotFound
+from app.models.shipment import ExceptionType, ShipmentNotFound
 from app.models.state import (
     AgentState,
     ApprovalStatus,
     Assessment,
     RetrievedPolicy,
 )
+from app.observability.tracing import observe
 from app.services.llm import get_llm_service
 from app.tools.compute_eta import compute_eta
 from app.tools.draft_message import draft_message
 from app.tools.policy_search import policy_search
 from app.tools.shipment_lookup import shipment_lookup
-
 
 # Maps each exception type to the recipient the drafted action should
 # go to. Decided in code, not by the LLM — a deliberate control boundary.
@@ -60,7 +59,7 @@ _RECIPIENT_BY_EXCEPTION: dict[ExceptionType, tuple[str, str]] = {
 def initialize(state: AgentState) -> AgentState:
     """Set up the investigation run: assign an id and a start time."""
     state.investigation_id = state.investigation_id or f"inv-{uuid.uuid4().hex[:12]}"
-    state.started_at = datetime.now(timezone.utc)
+    state.started_at = datetime.now(UTC)
     state.add_trace("initialize", "start", f"Investigating {state.shipment_id}")
     return state
 
@@ -76,7 +75,8 @@ def lookup_shipment(state: AgentState) -> AgentState:
     if isinstance(result, ShipmentNotFound):
         state.shipment_found = False
         state.add_trace(
-            "lookup_shipment", "not_found",
+            "lookup_shipment",
+            "not_found",
             f"No shipment found for {state.shipment_id}",
         )
         return state
@@ -84,7 +84,8 @@ def lookup_shipment(state: AgentState) -> AgentState:
     state.shipment = result
     state.shipment_found = True
     state.add_trace(
-        "lookup_shipment", "found",
+        "lookup_shipment",
+        "found",
         f"status={result.status.value}, exception={result.exception_type.value}",
     )
     return state
@@ -138,7 +139,8 @@ def assess_exception(state: AgentState) -> AgentState:
     state.exception_detected = needs_action
 
     state.add_trace(
-        "assess_exception", "decision",
+        "assess_exception",
+        "decision",
         f"{shipment.exception_type.value} -> "
         f"{'ACTION' if needs_action else 'NO_ACTION'}",
     )
@@ -166,7 +168,8 @@ def retrieve_policy_and_sla(state: AgentState) -> AgentState:
         summary="",
     )
     state.add_trace(
-        "retrieve_policy_and_sla", "policy",
+        "retrieve_policy_and_sla",
+        "policy",
         f"retrieved {len(citations)} policy chunk(s)",
     )
 
@@ -209,7 +212,8 @@ def build_assessment(state: AgentState) -> AgentState:
     sla = state.sla_status
     if sla and sla.sla_applies:
         sla_text = (
-            "already breached" if sla.already_breached
+            "already breached"
+            if sla.already_breached
             else f"{sla.hours_until_breach} hours until breach"
         )
     else:
@@ -292,7 +296,8 @@ def draft_action(state: AgentState) -> AgentState:
     )
     state.approval_status = ApprovalStatus.PENDING
     state.add_trace(
-        "draft_action", "drafted",
+        "draft_action",
+        "drafted",
         f"{recipient_type} message to {recipient_label}",
     )
     return state
@@ -330,7 +335,7 @@ def finalize(state: AgentState) -> AgentState:
         state.approval_status = ApprovalStatus.PENDING
         note = "no decision recorded"
 
-    state.completed_at = datetime.now(timezone.utc)
+    state.completed_at = datetime.now(UTC)
     state.add_trace("finalize", "closed", note)
     return state
 
@@ -367,6 +372,6 @@ def summarize_and_stop(state: AgentState) -> AgentState:
                 f"action. No escalation or notice is needed at this time."
             )
 
-    state.completed_at = datetime.now(timezone.utc)
+    state.completed_at = datetime.now(UTC)
     state.add_trace("summarize_and_stop", "summary", "no action required")
     return state

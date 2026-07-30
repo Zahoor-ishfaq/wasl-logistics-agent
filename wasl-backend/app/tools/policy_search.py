@@ -23,7 +23,6 @@ from app.models.answer import Citation
 from app.models.shipment import ExceptionType
 from app.rag.retriever import get_retriever
 
-
 # Maps each exception type to a natural-language query that retrieves
 # the most relevant policy for it. Written to match the language used
 # in the policy documents so retrieval lands on the right sections.
@@ -33,12 +32,10 @@ _EXCEPTION_QUERIES: dict[ExceptionType, str] = {
         "clearance procedure notification"
     ),
     ExceptionType.holiday_closure: (
-        "public holiday closure Eid delay expected SLA exemption "
-        "customs offices closed"
+        "public holiday closure Eid delay expected SLA exemption customs offices closed"
     ),
     ExceptionType.cross_border: (
-        "cross border GCC delay escalation visibility notification "
-        "border crossing hold"
+        "cross border GCC delay escalation visibility notification border crossing hold"
     ),
     ExceptionType.supplier_delay: (
         "supplier vendor delivery failure delay notification vendor "

@@ -28,7 +28,6 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from app.rag.service import get_rag_service  # noqa: E402
 
-
 # Questions the knowledge base SHOULD be able to answer.
 ANSWERABLE = [
     "What documents are required to import goods into Saudi Arabia?",

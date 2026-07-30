@@ -28,7 +28,6 @@ exactly where it left off when the human decides.
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
-from app.models.state import AgentState
 from app.agent.nodes import (
     approval_gate,
     assess_exception,
@@ -40,6 +39,7 @@ from app.agent.nodes import (
     retrieve_policy_and_sla,
     summarize_and_stop,
 )
+from app.models.state import AgentState
 
 
 # ---------------------------------------------------------------------------
@@ -52,7 +52,9 @@ def _route_after_lookup(state: AgentState) -> str:
 
 def _route_after_assess(state: AgentState) -> str:
     """After assessment: investigate if an exception needs action, else stop."""
-    return "retrieve_policy_and_sla" if state.exception_detected else "summarize_and_stop"
+    return (
+        "retrieve_policy_and_sla" if state.exception_detected else "summarize_and_stop"
+    )
 
 
 # ---------------------------------------------------------------------------

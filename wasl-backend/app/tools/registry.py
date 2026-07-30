@@ -37,7 +37,6 @@ from app.tools.draft_message import draft_message
 from app.tools.policy_search import policy_search
 from app.tools.shipment_lookup import shipment_lookup
 
-
 # name -> callable
 TOOLS: dict[str, Callable] = {
     "shipment_lookup": shipment_lookup,

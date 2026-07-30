@@ -8,7 +8,7 @@ makes no network calls. That's what lets it run in CI on every push.
 """
 
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -23,7 +23,7 @@ if str(PROJECT_ROOT) not in sys.path:
 @pytest.fixture
 def fixed_now():
     """A fixed 'now' so time-dependent logic is deterministic."""
-    return datetime(2026, 3, 10, 12, 0, tzinfo=timezone.utc)
+    return datetime(2026, 3, 10, 12, 0, tzinfo=UTC)
 
 
 def make_shipment(**overrides):
@@ -32,7 +32,10 @@ def make_shipment(**overrides):
     Centralizes the required fields so tests stay short.
     """
     from app.models.shipment import (
-        Shipment, ShipmentLocation, ExceptionType, ShipmentStatus,
+        ExceptionType,
+        Shipment,
+        ShipmentLocation,
+        ShipmentStatus,
     )
 
     base = dict(
@@ -42,10 +45,12 @@ def make_shipment(**overrides):
         exception_detail="Missing SASO certificate for HS 8471.30",
         origin="Shenzhen, China",
         destination="Riyadh, KSA",
-        current_location=ShipmentLocation(city="Jeddah", facility="King Abdulaziz Port"),
+        current_location=ShipmentLocation(
+            city="Jeddah", facility="King Abdulaziz Port"
+        ),
         carrier="Al-Wasl Freight",
-        created_at=datetime(2026, 3, 8, 8, 0, tzinfo=timezone.utc),
-        last_updated=datetime(2026, 3, 10, 14, 30, tzinfo=timezone.utc),
+        created_at=datetime(2026, 3, 8, 8, 0, tzinfo=UTC),
+        last_updated=datetime(2026, 3, 10, 14, 30, tzinfo=UTC),
         customer_name="Riyadh Electronics Trading",
     )
     base.update(overrides)
@@ -72,8 +77,16 @@ def fake_citations():
     from app.models.answer import Citation
 
     return [
-        Citation(source="customs_procedure.md", section="Required documentation",
-                 snippet="A SASO certificate is required.", similarity_score=0.72),
-        Citation(source="delayed_shipments_policy.md", section="Category A",
-                 snippet="Customs holds must be reported within one hour.", similarity_score=0.61),
+        Citation(
+            source="customs_procedure.md",
+            section="Required documentation",
+            snippet="A SASO certificate is required.",
+            similarity_score=0.72,
+        ),
+        Citation(
+            source="delayed_shipments_policy.md",
+            section="Category A",
+            snippet="Customs holds must be reported within one hour.",
+            similarity_score=0.61,
+        ),
     ]
