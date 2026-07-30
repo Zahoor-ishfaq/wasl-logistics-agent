@@ -184,6 +184,11 @@ function Tower() {
     }
   }
 
+  // Dismiss the investigation panel and return to the queue.
+  function close() {
+    setSel(null); setInv(null); setDecision(null); setErr(""); setPhase("idle");
+  }
+
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 22 }}>
@@ -225,13 +230,22 @@ function Tower() {
         {sel && (
           <div className="fade">
             <Panel>
-              <div style={{ padding: "16px 18px", borderBottom: `1px solid ${C.line}`, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ padding: "16px 18px", borderBottom: `1px solid ${C.line}`, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
                 <div>
                   <div className="mono" style={{ fontSize: 15, fontWeight: 600 }}>{sel.id}</div>
                   <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>{sel.route} · {sel.customer}</div>
                   <div style={{ fontSize: 12, color: C.muted, marginTop: 1 }}>{money(sel.value)}</div>
                 </div>
-                <StateTag state={EX_STATE[sel.exception]} label={EX_LABEL[sel.exception]} big />
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <StateTag state={EX_STATE[sel.exception]} label={EX_LABEL[sel.exception]} big />
+                  <button
+                    onClick={close}
+                    title="Close"
+                    aria-label="Close investigation"
+                    className="btn"
+                    style={{ background: "transparent", border: "none", color: C.muted, fontSize: 20, lineHeight: 1, cursor: "pointer", padding: "2px 6px", borderRadius: 6 }}
+                  >×</button>
+                </div>
               </div>
 
               {(phase === "running") && (
@@ -261,9 +275,12 @@ function Tower() {
                   )}
 
                   {!inv.drafted_action && (
-                    <div style={{ padding: 18, borderLeft: `3px solid ${C.slate}`, margin: 14, background: C.slateBg, borderRadius: 6 }}>
-                      <div style={{ fontSize: 10, letterSpacing: 1.3, textTransform: "uppercase", color: C.slate, marginBottom: 8, fontWeight: 600 }}>Resolved — no action required</div>
-                      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.ink2 }}>{inv.summary}</p>
+                    <div style={{ padding: 18 }}>
+                      <div style={{ borderLeft: `3px solid ${C.slate}`, background: C.slateBg, borderRadius: 6, padding: 16 }}>
+                        <div style={{ fontSize: 10, letterSpacing: 1.3, textTransform: "uppercase", color: C.slate, marginBottom: 8, fontWeight: 600 }}>Resolved — no action required</div>
+                        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: C.ink2 }}>{inv.summary}</p>
+                      </div>
+                      <button className="btn" onClick={close} style={{ width: "100%", marginTop: 12, background: C.sidebar, color: "#fff", border: "none", borderRadius: 7, padding: 11, fontSize: 13, fontWeight: 600 }}>Back to queue</button>
                     </div>
                   )}
 
@@ -303,10 +320,13 @@ function Tower() {
                       )}
                       {phase === "deciding" && <div style={{ fontSize: 12.5, color: C.muted, textAlign: "center", padding: 8 }}>Submitting decision…</div>}
                       {phase === "done" && decision && (
-                        <div style={{ background: decision === "approved" ? C.greenBg : C.redBg, border: `1px solid ${decision === "approved" ? C.green : C.red}22`, borderRadius: 7, padding: 13, display: "flex", alignItems: "center", gap: 9 }}>
-                          <span style={{ fontSize: 15, color: decision === "approved" ? C.green : C.red }}>{decision === "approved" ? "✓" : "✕"}</span>
-                          <span style={{ fontSize: 12.5, fontWeight: 600, color: decision === "approved" ? C.green : C.red }}>{decision === "approved" ? "Approved — action sent and logged." : "Rejected — nothing sent."}</span>
-                        </div>
+                        <>
+                          <div style={{ background: decision === "approved" ? C.greenBg : C.redBg, border: `1px solid ${decision === "approved" ? C.green : C.red}22`, borderRadius: 7, padding: 13, display: "flex", alignItems: "center", gap: 9 }}>
+                            <span style={{ fontSize: 15, color: decision === "approved" ? C.green : C.red }}>{decision === "approved" ? "✓" : "✕"}</span>
+                            <span style={{ fontSize: 12.5, fontWeight: 600, color: decision === "approved" ? C.green : C.red }}>{decision === "approved" ? "Approved — action sent and logged." : "Rejected — nothing sent."}</span>
+                          </div>
+                          <button className="btn" onClick={close} style={{ width: "100%", marginTop: 10, background: C.sidebar, color: "#fff", border: "none", borderRadius: 7, padding: 11, fontSize: 13, fontWeight: 600 }}>Back to queue</button>
+                        </>
                       )}
                     </div>
                   )}
