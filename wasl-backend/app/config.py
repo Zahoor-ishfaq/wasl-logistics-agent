@@ -78,7 +78,7 @@ class Settings(BaseSettings):
     # Range: 0.0 (keep everything) to 1.0 (keep only exact matches).
     # 0.3 is a reasonable starting point; tune against eval scores.
     retrieval_min_score: float = 0.3
-    
+
     # ------------------------------------------------------------------
     # Semantic cache (Redis)
     # ------------------------------------------------------------------

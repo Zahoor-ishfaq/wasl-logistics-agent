@@ -44,9 +44,8 @@ import numpy as np
 
 from app.config import settings
 
-
-_GEN_KEY = "wasl:cache:generation"      # current generation counter
-_ENTRY_PREFIX = "wasl:cache:entries"    # per-generation entry index set
+_GEN_KEY = "wasl:cache:generation"  # current generation counter
+_ENTRY_PREFIX = "wasl:cache:entries"  # per-generation entry index set
 
 
 class SemanticCache:
@@ -68,7 +67,7 @@ class SemanticCache:
                 host=settings.redis_host,
                 port=settings.redis_port,
                 db=settings.redis_db,
-                decode_responses=False,   # we store binary embeddings
+                decode_responses=False,  # we store binary embeddings
                 socket_connect_timeout=2,
             )
             self._redis.ping()
@@ -123,7 +122,10 @@ class SemanticCache:
                     best_score = score
                     best_payload = data.get(b"answer")
 
-            if best_payload is not None and best_score >= settings.cache_similarity_threshold:
+            if (
+                best_payload is not None
+                and best_score >= settings.cache_similarity_threshold
+            ):
                 answer = json.loads(best_payload)
                 answer["_cache_hit"] = True
                 answer["_cache_score"] = round(best_score, 4)
@@ -150,11 +152,14 @@ class SemanticCache:
             # Strip transient cache markers before storing.
             clean = {k: v for k, v in answer.items() if not k.startswith("_cache")}
 
-            self._redis.hset(entry_id, mapping={
-                "question": question,
-                "answer": json.dumps(clean),
-                "embedding": emb,
-            })
+            self._redis.hset(
+                entry_id,
+                mapping={
+                    "question": question,
+                    "answer": json.dumps(clean),
+                    "embedding": emb,
+                },
+            )
             self._redis.expire(entry_id, settings.cache_ttl_seconds)
             self._redis.sadd(index_key, entry_id)
             self._redis.expire(index_key, settings.cache_ttl_seconds)

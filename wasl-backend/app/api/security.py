@@ -33,7 +33,7 @@ _INJECTION_PATTERNS = [
     r"forget (everything|all|your instructions)",
     r"system prompt",
     r"reveal (your |the )?(system )?(prompt|instructions)",
-    r"</?(system|assistant|user)>",   # fake role tags
+    r"</?(system|assistant|user)>",  # fake role tags
 ]
 
 _MAX_QUESTION_CHARS = 2000

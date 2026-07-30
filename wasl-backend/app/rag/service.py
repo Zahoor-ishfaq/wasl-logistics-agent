@@ -39,7 +39,6 @@ from app.services.cache import get_cache
 from app.services.embeddings import get_embedding_service
 from app.services.llm import get_llm_service
 
-
 _DECLINE_MESSAGE = (
     "I don't have information about that in the knowledge base. "
     "I can only answer questions covered by the logistics documents "
