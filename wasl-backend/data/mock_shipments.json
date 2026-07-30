@@ -1,0 +1,304 @@
+{
+  "shipments": [
+    {
+      "shipment_id": "WSL-20260310-0042",
+      "status": "held",
+      "exception_type": "customs_hold",
+      "exception_detail": "Held at King Abdulaziz Port. Missing SASO conformity certificate for HS code 8471.30 (laptops). Commercial invoice present but certificate of origin does not cover this HS line. Third resubmission attempt on FASAH pending.",
+      "origin": "Shenzhen, China",
+      "destination": "Riyadh, KSA",
+      "current_location": {
+        "city": "Jeddah",
+        "country": "Saudi Arabia",
+        "facility": "King Abdulaziz Port"
+      },
+      "carrier": "Al-Wasl Freight Solutions",
+      "vendor_cr": "1010456789",
+      "created_at": "2026-03-06T08:00:00Z",
+      "last_updated": "2026-03-10T14:30:00Z",
+      "sla": {
+        "promised_delivery": "2026-03-11T18:00:00Z",
+        "penalty_per_day_sar": 500.0,
+        "max_liability_sar": 50000.0
+      },
+      "customer_name": "Riyadh Electronics Trading Co.",
+      "customer_contact": "ops@riyadhelectronics.sa",
+      "notes": "Customer notified of hold on 2026-03-08. Awaiting SASO certificate from supplier."
+    },
+    {
+      "shipment_id": "WSL-20260311-0043",
+      "status": "at_customs",
+      "exception_type": "customs_hold",
+      "exception_detail": "Held at Dammam port. Importer Commercial Registration (CR) number missing from commercial invoice. ZATCA flagged declaration for correction. Cannot proceed until corrected CR number is submitted on FASAH.",
+      "origin": "Mumbai, India",
+      "destination": "Dammam, KSA",
+      "current_location": {
+        "city": "Dammam",
+        "country": "Saudi Arabia",
+        "facility": "King Abdulaziz Port - Dammam"
+      },
+      "carrier": "Gulf Bridge Logistics",
+      "vendor_cr": "2050334412",
+      "created_at": "2026-03-08T06:00:00Z",
+      "last_updated": "2026-03-11T09:15:00Z",
+      "sla": {
+        "promised_delivery": "2026-03-13T12:00:00Z",
+        "penalty_per_day_sar": 350.0,
+        "max_liability_sar": 40000.0
+      },
+      "customer_name": "Eastern Province Wholesale LLC",
+      "customer_contact": "imports@epwholesale.sa",
+      "notes": "Client documentation error. CR number requested from client 2026-03-11."
+    },
+    {
+      "shipment_id": "WSL-20260318-0088",
+      "status": "in_transit",
+      "exception_type": "holiday_closure",
+      "exception_detail": "Shipment cleared customs but delivery delayed. ZATCA and delivery operations closed for Eid al-Fitr (19-22 March 2026). Delivery will resume first working day after the holiday. No action required — expected seasonal closure.",
+      "origin": "Istanbul, Turkey",
+      "destination": "Jeddah, KSA",
+      "current_location": {
+        "city": "Jeddah",
+        "country": "Saudi Arabia",
+        "facility": "Al-Wasl Jeddah Hub"
+      },
+      "carrier": "Al-Wasl Freight Solutions",
+      "vendor_cr": "1010456789",
+      "created_at": "2026-03-14T10:00:00Z",
+      "last_updated": "2026-03-18T16:00:00Z",
+      "sla": {
+        "promised_delivery": "2026-03-24T18:00:00Z",
+        "penalty_per_day_sar": 400.0,
+        "max_liability_sar": 45000.0
+      },
+      "customer_name": "Hijaz Retail Group",
+      "customer_contact": "logistics@hijazretail.sa",
+      "notes": "SLA deadline already accounts for Eid closure. Delivery scheduled for 23 March."
+    },
+    {
+      "shipment_id": "WSL-20260524-0151",
+      "status": "in_transit",
+      "exception_type": "holiday_closure",
+      "exception_detail": "In transit to Riyadh but arriving during Eid al-Adha closure (27-30 May 2026). Customs offices closed. Delivery scheduled to resume 31 May. Delay is expected and within holiday-adjusted SLA — no escalation needed.",
+      "origin": "Dubai, UAE",
+      "destination": "Riyadh, KSA",
+      "current_location": {
+        "city": "Riyadh",
+        "country": "Saudi Arabia",
+        "facility": "Al-Wasl Riyadh Hub"
+      },
+      "carrier": "Al-Wasl Freight Solutions",
+      "vendor_cr": "1010456789",
+      "created_at": "2026-05-20T09:00:00Z",
+      "last_updated": "2026-05-24T11:00:00Z",
+      "sla": {
+        "promised_delivery": "2026-06-01T18:00:00Z",
+        "penalty_per_day_sar": 300.0,
+        "max_liability_sar": 35000.0
+      },
+      "customer_name": "Najd Distribution Company",
+      "customer_contact": "ops@najddist.sa",
+      "notes": "Holiday-adjusted delivery date communicated to customer on 2026-05-22."
+    },
+    {
+      "shipment_id": "WSL-20260412-0210",
+      "status": "held",
+      "exception_type": "cross_border",
+      "exception_detail": "Held at Ghuwaifat border crossing (Saudi-UAE) for 52 hours. No reason communicated by border authority. Carrier representative unable to confirm cause. Documentation appears complete. Escalated for visibility — investigation ongoing.",
+      "origin": "Abu Dhabi, UAE",
+      "destination": "Riyadh, KSA",
+      "current_location": {
+        "city": "Ghuwaifat",
+        "country": "Saudi Arabia",
+        "facility": "Saudi-UAE Border - Ghuwaifat Crossing"
+      },
+      "carrier": "Gulf Bridge Logistics",
+      "vendor_cr": "2050334412",
+      "created_at": "2026-04-09T07:00:00Z",
+      "last_updated": "2026-04-12T13:45:00Z",
+      "sla": {
+        "promised_delivery": "2026-04-12T20:00:00Z",
+        "penalty_per_day_sar": 600.0,
+        "max_liability_sar": 60000.0
+      },
+      "customer_name": "Capital Medical Supplies",
+      "customer_contact": "supplychain@capitalmedical.sa",
+      "notes": "Cross-border hold. Cause unconfirmed. Customer relationship manager informed 2026-04-11."
+    },
+    {
+      "shipment_id": "WSL-20260415-0225",
+      "status": "held",
+      "exception_type": "cross_border",
+      "exception_detail": "Held at Al-Batha border crossing (Saudi-UAE) for 30 hours. Border authority conducting additional inspection but has not stated the specific reason or expected release time. Carrier awaiting update. Escalated for customer visibility.",
+      "origin": "Sharjah, UAE",
+      "destination": "Dammam, KSA",
+      "current_location": {
+        "city": "Al-Batha",
+        "country": "Saudi Arabia",
+        "facility": "Saudi-UAE Border - Al-Batha Crossing"
+      },
+      "carrier": "Al-Wasl Freight Solutions",
+      "vendor_cr": "1010456789",
+      "created_at": "2026-04-13T05:30:00Z",
+      "last_updated": "2026-04-15T11:20:00Z",
+      "sla": {
+        "promised_delivery": "2026-04-16T12:00:00Z",
+        "penalty_per_day_sar": 450.0,
+        "max_liability_sar": 50000.0
+      },
+      "customer_name": "Gulf Industrial Parts Co.",
+      "customer_contact": "procurement@gulfindustrial.sa",
+      "notes": "Second cross-border delay with this carrier this month. Flagging for carrier review."
+    },
+    {
+      "shipment_id": "WSL-20260420-0301",
+      "status": "pending",
+      "exception_type": "supplier_delay",
+      "exception_detail": "Supplier failed to dispatch goods on the agreed date of 18 April. Goods not yet received at origin hub. Supplier cited production backlog. New dispatch date not yet confirmed. Vendor-facing issue — customer delivery will slip.",
+      "origin": "Guangzhou, China",
+      "destination": "Jeddah, KSA",
+      "current_location": {
+        "city": "Guangzhou",
+        "country": "China",
+        "facility": "Supplier Facility - Awaiting Dispatch"
+      },
+      "carrier": "Oceanic Cargo Lines",
+      "vendor_cr": "3070221185",
+      "created_at": "2026-04-15T08:00:00Z",
+      "last_updated": "2026-04-20T10:00:00Z",
+      "sla": {
+        "promised_delivery": "2026-04-28T18:00:00Z",
+        "penalty_per_day_sar": 550.0,
+        "max_liability_sar": 55000.0
+      },
+      "customer_name": "Red Sea Trading Establishment",
+      "customer_contact": "orders@redseatrading.sa",
+      "notes": "Supplier delay. Formal exception notice issued to supplier 2026-04-19. Recorded on vendor scorecard."
+    },
+    {
+      "shipment_id": "WSL-20260422-0315",
+      "status": "pending",
+      "exception_type": "supplier_delay",
+      "exception_detail": "Supplier delivered incomplete quantity to origin hub — 60 of 100 units received. Remaining 40 units delayed by supplier with no confirmed ship date. Partial shipment option under review. Vendor-facing issue requiring supplier follow-up.",
+      "origin": "Bangkok, Thailand",
+      "destination": "Riyadh, KSA",
+      "current_location": {
+        "city": "Bangkok",
+        "country": "Thailand",
+        "facility": "Origin Consolidation Hub"
+      },
+      "carrier": "Oceanic Cargo Lines",
+      "vendor_cr": "3070221185",
+      "created_at": "2026-04-18T09:00:00Z",
+      "last_updated": "2026-04-22T14:00:00Z",
+      "sla": {
+        "promised_delivery": "2026-05-02T18:00:00Z",
+        "penalty_per_day_sar": 400.0,
+        "max_liability_sar": 45000.0
+      },
+      "customer_name": "Kingdom Home Goods LLC",
+      "customer_contact": "supply@kingdomhome.sa",
+      "notes": "Partial supplier fulfillment. Awaiting client decision on split shipment vs full-order wait."
+    },
+    {
+      "shipment_id": "WSL-20260405-0180",
+      "status": "delivered",
+      "exception_type": "none",
+      "exception_detail": "",
+      "origin": "Jeddah, KSA",
+      "destination": "Makkah, KSA",
+      "current_location": {
+        "city": "Makkah",
+        "country": "Saudi Arabia",
+        "facility": "Delivered - Consignee Address"
+      },
+      "carrier": "Al-Wasl Freight Solutions",
+      "vendor_cr": "1010456789",
+      "created_at": "2026-04-03T08:00:00Z",
+      "last_updated": "2026-04-05T15:30:00Z",
+      "sla": {
+        "promised_delivery": "2026-04-05T18:00:00Z",
+        "penalty_per_day_sar": 300.0,
+        "max_liability_sar": 30000.0
+      },
+      "customer_name": "Makkah Grand Retail",
+      "customer_contact": "receiving@makkahgrand.sa",
+      "notes": "Delivered on time. POD uploaded same day. No issues."
+    },
+    {
+      "shipment_id": "WSL-20260408-0195",
+      "status": "out_for_delivery",
+      "exception_type": "none",
+      "exception_detail": "",
+      "origin": "Riyadh, KSA",
+      "destination": "Dammam, KSA",
+      "current_location": {
+        "city": "Dammam",
+        "country": "Saudi Arabia",
+        "facility": "Out for Delivery - Dammam Route 3"
+      },
+      "carrier": "Al-Wasl Freight Solutions",
+      "vendor_cr": "1010456789",
+      "created_at": "2026-04-07T09:00:00Z",
+      "last_updated": "2026-04-08T08:00:00Z",
+      "sla": {
+        "promised_delivery": "2026-04-08T18:00:00Z",
+        "penalty_per_day_sar": 250.0,
+        "max_liability_sar": 30000.0
+      },
+      "customer_name": "Eastern Tools & Hardware",
+      "customer_contact": "orders@easterntools.sa",
+      "notes": "On schedule. Driver contacted consignee, delivery expected by 14:00."
+    },
+    {
+      "shipment_id": "WSL-20260410-0202",
+      "status": "failed_delivery",
+      "exception_type": "failed_delivery",
+      "exception_detail": "First delivery attempt failed. Consignee unavailable at address during business hours. Driver photographed location and logged attempt. Second attempt scheduled within 24 hours per policy. Not an SLA breach yet.",
+      "origin": "Riyadh, KSA",
+      "destination": "Riyadh, KSA",
+      "current_location": {
+        "city": "Riyadh",
+        "country": "Saudi Arabia",
+        "facility": "Al-Wasl Riyadh Hub - Awaiting Re-delivery"
+      },
+      "carrier": "Al-Wasl Freight Solutions",
+      "vendor_cr": "1010456789",
+      "created_at": "2026-04-09T10:00:00Z",
+      "last_updated": "2026-04-10T13:00:00Z",
+      "sla": {
+        "promised_delivery": "2026-04-11T18:00:00Z",
+        "penalty_per_day_sar": 200.0,
+        "max_liability_sar": 25000.0
+      },
+      "customer_name": "Olaya Business Center",
+      "customer_contact": "admin@olayabc.sa",
+      "notes": "First attempt failed - consignee unavailable. Re-delivery scheduled 2026-04-11 morning."
+    },
+    {
+      "shipment_id": "WSL-20260414-0218",
+      "status": "in_transit",
+      "exception_type": "none",
+      "exception_detail": "",
+      "origin": "Dammam, KSA",
+      "destination": "Madinah, KSA",
+      "current_location": {
+        "city": "Buraydah",
+        "country": "Saudi Arabia",
+        "facility": "In Transit - Highway 65"
+      },
+      "carrier": "Al-Wasl Freight Solutions",
+      "vendor_cr": "1010456789",
+      "created_at": "2026-04-13T07:00:00Z",
+      "last_updated": "2026-04-14T12:00:00Z",
+      "sla": {
+        "promised_delivery": "2026-04-16T18:00:00Z",
+        "penalty_per_day_sar": 300.0,
+        "max_liability_sar": 35000.0
+      },
+      "customer_name": "Madinah Fresh Foods",
+      "customer_contact": "cold@madinahfresh.sa",
+      "notes": "Cold-chain shipment, temperature stable at 4C. On schedule for 16 April delivery."
+    }
+  ]
+}

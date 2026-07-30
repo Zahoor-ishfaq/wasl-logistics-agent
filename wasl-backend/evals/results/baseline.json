@@ -1,0 +1,241 @@
+{
+  "timestamp": "2026-07-29T22:56:21.306923+00:00",
+  "model": "claude-sonnet-4-6",
+  "total_cases": 26,
+  "total_passed": 20,
+  "overall_pass_rate": 0.769,
+  "by_type": {
+    "rag": {
+      "total": 17,
+      "passed": 12,
+      "pass_rate": 0.706
+    },
+    "decline": {
+      "total": 3,
+      "passed": 2,
+      "pass_rate": 0.667
+    },
+    "agent": {
+      "total": 6,
+      "passed": 6,
+      "pass_rate": 1.0
+    }
+  },
+  "ragas": null,
+  "cases": [
+    {
+      "id": "rag-01",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 0.5,
+      "source_hit": true,
+      "passed": true
+    },
+    {
+      "id": "rag-02",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 1.0,
+      "source_hit": true,
+      "passed": true
+    },
+    {
+      "id": "rag-03",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 0.0,
+      "source_hit": true,
+      "passed": false
+    },
+    {
+      "id": "rag-04",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 0.5,
+      "source_hit": true,
+      "passed": true
+    },
+    {
+      "id": "rag-05",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 1.0,
+      "source_hit": true,
+      "passed": true
+    },
+    {
+      "id": "rag-06",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 0.5,
+      "source_hit": true,
+      "passed": true
+    },
+    {
+      "id": "rag-07",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 1.0,
+      "source_hit": true,
+      "passed": true
+    },
+    {
+      "id": "rag-08",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 1.0,
+      "source_hit": true,
+      "passed": true
+    },
+    {
+      "id": "rag-09",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 0.5,
+      "source_hit": true,
+      "passed": true
+    },
+    {
+      "id": "rag-10",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 0.8,
+      "source_hit": true,
+      "passed": true
+    },
+    {
+      "id": "rag-11",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 0.667,
+      "source_hit": true,
+      "passed": true
+    },
+    {
+      "id": "rag-12",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 0.333,
+      "source_hit": true,
+      "passed": false
+    },
+    {
+      "id": "rag-13",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 0.0,
+      "source_hit": false,
+      "passed": false
+    },
+    {
+      "id": "rag-14",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 1.0,
+      "source_hit": true,
+      "passed": true
+    },
+    {
+      "id": "rag-15",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 0.333,
+      "source_hit": true,
+      "passed": false
+    },
+    {
+      "id": "rag-16",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 0.667,
+      "source_hit": true,
+      "passed": true
+    },
+    {
+      "id": "rag-17",
+      "type": "rag",
+      "answered": true,
+      "keyword_coverage": 0.0,
+      "source_hit": true,
+      "passed": false
+    },
+    {
+      "id": "edge-01",
+      "type": "decline",
+      "answered": false,
+      "passed": true
+    },
+    {
+      "id": "edge-02",
+      "type": "decline",
+      "answered": true,
+      "passed": false
+    },
+    {
+      "id": "edge-03",
+      "type": "decline",
+      "answered": false,
+      "passed": true
+    },
+    {
+      "id": "agent-01",
+      "type": "agent",
+      "detected_exception": "customs_hold",
+      "took_action": true,
+      "recipient": "internal",
+      "action_ok": true,
+      "recipient_ok": true,
+      "passed": true
+    },
+    {
+      "id": "agent-02",
+      "type": "agent",
+      "detected_exception": "cross_border",
+      "took_action": true,
+      "recipient": "customer",
+      "action_ok": true,
+      "recipient_ok": true,
+      "passed": true
+    },
+    {
+      "id": "agent-03",
+      "type": "agent",
+      "detected_exception": "supplier_delay",
+      "took_action": true,
+      "recipient": "vendor",
+      "action_ok": true,
+      "recipient_ok": true,
+      "passed": true
+    },
+    {
+      "id": "agent-04",
+      "type": "agent",
+      "detected_exception": "holiday_closure",
+      "took_action": false,
+      "recipient": null,
+      "action_ok": true,
+      "recipient_ok": true,
+      "passed": true
+    },
+    {
+      "id": "agent-05",
+      "type": "agent",
+      "detected_exception": "none",
+      "took_action": false,
+      "recipient": null,
+      "action_ok": true,
+      "recipient_ok": true,
+      "passed": true
+    },
+    {
+      "id": "agent-06",
+      "type": "agent",
+      "detected_exception": "none",
+      "took_action": false,
+      "recipient": null,
+      "action_ok": true,
+      "recipient_ok": true,
+      "passed": true
+    }
+  ]
+}

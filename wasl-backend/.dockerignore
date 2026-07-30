@@ -1,0 +1,47 @@
+# Keep the build context small and secrets out of the image.
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Secrets and local config — NEVER bake these into an image
+.env
+.env.*
+!.env.example
+
+# The vector store is built at runtime via ingest; don't ship a stale one
+chroma/
+data/chroma/
+*.sqlite3
+
+# Dev-only material
+tests/
+eval/
+docs/
+*.md
+!README.md
+
+# Frontend (separate image / not needed by the API)
+wasl-ui/
+
+# Git and CI
+.git/
+.gitignore
+.github/
+
+# OS / editor cruft
+.DS_Store
+.idea/
+.vscode/
