@@ -21,3 +21,6 @@ ruff
 mypy
 redis
 numpy
+SQLAlchemy==2.0.51
+alembic==1.18.5
+psycopg2-binary==2.9.12

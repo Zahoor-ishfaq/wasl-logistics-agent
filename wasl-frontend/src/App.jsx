@@ -6,14 +6,14 @@ import {
   listDocuments,
   uploadDocument,
   getHealth,
+  listShipments,
 } from "./api.js";
 
 // ============================================================================
 // Wasl — Agentic Logistics Control Tower (live UI, wired to FastAPI)
 // Design: enterprise v3 (Linear / Stripe / Datadog patterns).
-// Data: the shipment ROSTER below is display metadata (what a TMS would
-// provide for the queue). All investigation results — assessment, draft,
-// SLA, trace, approval — come live from the backend agent.
+// Shipment status, exceptions, routes, SLA values, and customer details are
+// loaded live from PostgreSQL through GET /api/shipments.
 // ============================================================================
 
 const C = {
@@ -28,23 +28,9 @@ const C = {
   slate: "#5E6B78", slateBg: "#EEF1F3",
 };
 
-// Display roster — the shipment metadata shown in the queue. IDs match the
-// backend's mock_shipments.json so investigations run against real records.
-const ROSTER = [
-  { id: "WSL-20260310-0042", status: "held", exception: "customs_hold", route: "Shenzhen → Riyadh", customer: "Riyadh Electronics Trading", sla: "breached", slaHours: -14, value: 312000 },
-  { id: "WSL-20260412-0210", status: "held", exception: "cross_border", route: "Abu Dhabi → Riyadh", customer: "Capital Medical Supplies", sla: "breached", slaHours: -8, value: 540000 },
-  { id: "WSL-20260420-0301", status: "pending", exception: "supplier_delay", route: "Guangzhou → Jeddah", customer: "Red Sea Trading", sla: "breached", slaHours: -20, value: 210000 },
-  { id: "WSL-20260311-0043", status: "at_customs", exception: "customs_hold", route: "Mumbai → Dammam", customer: "Eastern Province Wholesale", sla: "at_risk", slaHours: 6, value: 88500 },
-  { id: "WSL-20260415-0225", status: "held", exception: "cross_border", route: "Sharjah → Dammam", customer: "Gulf Industrial Parts", sla: "at_risk", slaHours: 11, value: 145000 },
-  { id: "WSL-20260422-0315", status: "pending", exception: "supplier_delay", route: "Bangkok → Riyadh", customer: "Kingdom Home Goods", sla: "at_risk", slaHours: 30, value: 76000 },
-  { id: "WSL-20260318-0088", status: "in_transit", exception: "holiday_closure", route: "Istanbul → Jeddah", customer: "Hijaz Retail Group", sla: "ok", slaHours: 50, value: 120000 },
-  { id: "WSL-20260414-0218", status: "in_transit", exception: "none", route: "Dammam → Madinah", customer: "Madinah Fresh Foods", sla: "ok", slaHours: 48, value: 51000 },
-  { id: "WSL-20260405-0180", status: "delivered", exception: "none", route: "Jeddah → Makkah", customer: "Makkah Grand Retail", sla: "ok", slaHours: null, value: 34000 },
-];
-
-const EX_LABEL = { customs_hold: "Customs hold", cross_border: "Cross-border", supplier_delay: "Supplier delay", holiday_closure: "Holiday closure", none: "Clear" };
-const EX_STATE = { customs_hold: "red", cross_border: "purple", supplier_delay: "amber", holiday_closure: "slate", none: "green" };
-const STATUS_LABEL = { held: "Held", at_customs: "At customs", pending: "Pending", in_transit: "In transit", delivered: "Delivered" };
+const EX_LABEL = { customs_hold: "Customs hold", cross_border: "Cross-border", supplier_delay: "Supplier delay", holiday_closure: "Holiday closure", carrier_delay: "Carrier delay", failed_delivery: "Failed delivery", none: "Clear" };
+const EX_STATE = { customs_hold: "red", cross_border: "purple", supplier_delay: "amber", holiday_closure: "slate", carrier_delay: "amber", failed_delivery: "red", none: "green" };
+const STATUS_LABEL = { held: "Held", at_customs: "At customs", pending: "Pending", in_transit: "In transit", out_for_delivery: "Out for delivery", delivered: "Delivered", failed_delivery: "Failed delivery", returned: "Returned" };
 
 const money = (n) => "SAR " + n.toLocaleString();
 const stateColor = (k) => ({ red: C.red, green: C.green, amber: C.amber, purple: C.purple, slate: C.slate, blue: C.blue }[k]);
@@ -147,20 +133,53 @@ function Tower() {
   const [statusF, setStatusF] = useState("all");
   const [exF, setExF] = useState("all");
   const [sort, setSort] = useState("sla");
+  const [roster, setRoster] = useState([]);
 
-  const kpis = useMemo(() => ({
-    open: ROSTER.filter(s => s.exception !== "none").length,
-    breached: ROSTER.filter(s => s.sla === "breached").length,
-    atRisk: ROSTER.filter(s => s.sla === "at_risk").length,
-  }), []);
+  useEffect(() => {
+    listShipments()
+      .then((data) => {
+        setRoster(
+          data.map((s) => ({
+            id: s.shipment_id,
+            status: s.status,
+            exception: s.exception_type,
+            route: `${s.origin} → ${s.destination}`,
+            customer: s.customer_name,
+            sla: s.sla_status,
+            slaHours: s.sla_hours_remaining,
+            slaBreached: Boolean(s.sla_breached),
+            value: Number(s.shipment_value_sar ?? 0),
+          }))
+        );
+      })
+      .catch((e) => setErr(e.message));
+  }, []);
+
+  const kpis = useMemo(() => {
+    const active = roster.filter((s) => s.status !== "delivered");
+    const delivered = roster.filter((s) => s.status === "delivered");
+    const deliveredOnTime = delivered.filter((s) => !s.slaBreached).length;
+    const onTime = delivered.length
+      ? Math.round((deliveredOnTime / delivered.length) * 100)
+      : 0;
+
+    return {
+      open: active.filter((s) => s.exception !== "none").length,
+      breached: active.filter((s) => s.sla === "breached").length,
+      atRisk: active.filter((s) => s.sla === "at_risk").length,
+      delivered: delivered.length,
+      deliveredOnTime,
+      onTime,
+    };
+  }, [roster]);
 
   const rows = useMemo(() => {
-    let list = ROSTER.filter(s => (statusF === "all" || s.status === statusF) && (exF === "all" || s.exception === exF));
+    let list = roster.filter(s => (statusF === "all" || s.status === statusF) && (exF === "all" || s.exception === exF));
     const rank = { breached: 0, at_risk: 1, ok: 2 };
     if (sort === "sla") list = [...list].sort((a, b) => (rank[a.sla] - rank[b.sla]) || ((a.slaHours ?? 999) - (b.slaHours ?? 999)));
     if (sort === "value") list = [...list].sort((a, b) => b.value - a.value);
     return list;
-  }, [statusF, exF, sort]);
+  }, [roster, statusF, exF, sort]);
 
   async function start(s) {
     setSel(s); setInv(null); setDecision(null); setErr(""); setPhase("running");
@@ -195,7 +214,13 @@ function Tower() {
         <Kpi label="Open exceptions" value={kpis.open} delta="requiring review" spark={[3,4,4,5,6,6,7]} />
         <Kpi label="SLA breached" value={kpis.breached} delta="penalty accruing" deltaState="red" state="red" spark={[1,1,2,2,3,3,3]} />
         <Kpi label="SLA at risk" value={kpis.atRisk} delta="< 12h to breach" deltaState="amber" state="amber" spark={[2,3,2,3,3,3,3]} />
-        <Kpi label="On-time (30d)" value="94%" delta="+1.2 pts" deltaState="green" state="green" spark={[90,91,92,91,93,93,94]} />
+        <Kpi
+          label="On-time delivered"
+          value={`${kpis.onTime}%`}
+          delta={`${kpis.deliveredOnTime}/${kpis.delivered} delivered on time`}
+          deltaState="green"
+          state="green"
+        />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: sel ? "1.1fr 1fr" : "1fr", gap: 20, alignItems: "start" }}>

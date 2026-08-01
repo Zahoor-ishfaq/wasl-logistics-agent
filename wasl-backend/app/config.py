@@ -101,7 +101,13 @@ class Settings(BaseSettings):
     # 500 tokens ≈ 2000 characters for English prose.
     chunk_size: int = 2000
     chunk_overlap: int = 200  # ~50 tokens overlap between chunks
-
+# ------------------------------------------------------------------
+# PostgreSQL database
+# ------------------------------------------------------------------
+    database_url: str = Field(
+    ...,
+    description="PostgreSQL connection URL — required",
+)
     # ------------------------------------------------------------------
     # Mock shipment data
     # ------------------------------------------------------------------

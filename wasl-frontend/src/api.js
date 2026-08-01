@@ -47,7 +47,7 @@ export async function verifyApiKey(key) {
   API_KEY = key || "";
   try {
     // /documents requires the key; a 200 means the key is valid.
-    await request("/documents");
+    await request("/shipments");
     return true;
   } catch (e) {
     API_KEY = prev; // roll back on failure
@@ -59,6 +59,8 @@ export async function verifyApiKey(key) {
 
 // ---- Health ---------------------------------------------------------------
 export const getHealth = () => request("/health");
+// ---- Shipments ------------------------------------------------------------
+export const listShipments = () => request("/shipments");
 
 // ---- Ask (RAG) ------------------------------------------------------------
 export const ask = (text, topK = 5) =>

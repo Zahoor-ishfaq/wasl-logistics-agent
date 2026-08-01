@@ -1,84 +1,79 @@
 """
 app/services/shipment_service.py
 
-A mock Transport Management System (TMS).
+A PostgreSQL-backed Transport Management System (TMS) service.
 
-In a real deployment this service would call a live TMS API (SAP TM,
-Oracle OTM, or an in-house system). In v1 it reads from a static JSON
-file — data/mock_shipments.json — but exposes exactly the interface a
-real TMS wrapper would.
+In a real deployment this service could call a live TMS API such as SAP TM,
+Oracle OTM, or an in-house system. For the current Wasl deployment, shipment
+records are stored in PostgreSQL.
 
-Because the interface is defined here and the rest of the app only
-depends on this interface (never on the JSON file directly), swapping
-to a real TMS later means rewriting only this one file. The agent,
-tools, and API don't change.
+Because the interface is defined here and the rest of the app only depends
+on this interface, replacing PostgreSQL with a real TMS integration later
+requires changing only this service. The agent, tools, and API do not change.
 
 Public methods:
     get_shipment(shipment_id) -> Shipment | ShipmentNotFound
     list_shipments()          -> list[Shipment]
-    list_shipment_ids()       -> list[str]   (used by the UI dropdown)
+    list_shipment_ids()       -> list[str]
 """
 
-import json
 from functools import lru_cache
-from pathlib import Path
 
-from pydantic import ValidationError
+from sqlalchemy import select
 
-from app.config import settings
-from app.models.shipment import Shipment, ShipmentNotFound
+from app.database import SessionLocal
+from app.db_models import ShipmentRecord
+from app.models.shipment import (
+    Shipment,
+    ShipmentLocation,
+    ShipmentNotFound,
+    SLATerms,
+)
 
 
 class ShipmentService:
     """
-    Reads shipment records from a JSON file and returns them as
-    validated Shipment models.
+    Reads shipment records from PostgreSQL and returns them as validated
+    Shipment models.
 
-    The file is loaded once and cached in memory. In v1 the data is
-    static, so there is no need to re-read on every call. (A real TMS
-    wrapper would make a network call per lookup instead.)
+    Database records are converted into the existing Pydantic Shipment
+    schema so the agent, tools, API routes, and tests continue using the
+    same interface.
     """
 
-    def __init__(self) -> None:
-        self._shipments: dict[str, Shipment] = {}
-        self._loaded = False
-
-    def _load(self) -> None:
+    def _record_to_shipment(self, record: ShipmentRecord) -> Shipment:
         """
-        Load and validate all shipments from the JSON file on first use.
-
-        Each record is validated against the Shipment schema. If a record
-        is malformed, it is skipped with a clear message rather than
-        crashing the whole service — one bad record shouldn't take down
-        every lookup.
+        Convert a SQLAlchemy ShipmentRecord into the existing Pydantic
+        Shipment model.
         """
-        if self._loaded:
-            return
 
-        path = Path(settings.mock_shipments_file)
-        if not path.exists():
-            raise FileNotFoundError(
-                f"Mock shipment file not found at '{path}'. "
-                f"Expected it at settings.mock_shipments_file. "
-                f"Did you create data/mock_shipments.json?"
+        sla: SLATerms | None = None
+
+        if record.promised_delivery is not None:
+            sla = SLATerms(
+                promised_delivery=record.promised_delivery,
+                penalty_per_day_sar=record.penalty_per_day_sar,
+                max_liability_sar=record.max_liability_sar,
             )
 
-        raw = json.loads(path.read_text(encoding="utf-8"))
-
-        # Accept either a top-level list or {"shipments": [...]}.
-        records = raw.get("shipments", raw) if isinstance(raw, dict) else raw
-
-        for record in records:
-            try:
-                shipment = Shipment(**record)
-            except ValidationError as exc:
-                # Skip the bad record, keep the rest working.
-                bad_id = record.get("shipment_id", "<unknown>")
-                print(f"[shipment_service] Skipping invalid record '{bad_id}': {exc}")
-                continue
-            self._shipments[shipment.shipment_id] = shipment
-
-        self._loaded = True
+        return Shipment(
+            shipment_id=record.shipment_id,
+            status=record.status,
+            exception_type=record.exception_type,
+            exception_detail=record.exception_detail,
+            shipment_value_sar=record.shipment_value_sar,
+            origin=record.origin,
+            destination=record.destination,
+            current_location=ShipmentLocation(**record.current_location),
+            carrier=record.carrier,
+            vendor_cr=record.vendor_cr,
+            created_at=record.created_at,
+            last_updated=record.last_updated,
+            sla=sla,
+            customer_name=record.customer_name,
+            customer_contact=record.customer_contact,
+            notes=record.notes,
+        )
 
     # ------------------------------------------------------------------
     # Public API
@@ -89,32 +84,65 @@ class ShipmentService:
 
         Returns:
             Shipment          if found
-            ShipmentNotFound  if no shipment matches the id
+            ShipmentNotFound  if no shipment matches the ID
 
-        Returning a typed not-found result (rather than None or raising)
+        Returning a typed not-found result rather than None or raising
         lets the agent handle the missing case explicitly and cleanly.
         """
-        self._load()
-        shipment = self._shipments.get(shipment_id.strip())
-        if shipment is None:
-            return ShipmentNotFound(shipment_id=shipment_id)
-        return shipment
+
+        cleaned_id = shipment_id.strip()
+
+        with SessionLocal() as db:
+            record = db.get(ShipmentRecord, cleaned_id)
+
+            if record is None:
+                return ShipmentNotFound(shipment_id=cleaned_id)
+
+            return self._record_to_shipment(record)
 
     def list_shipments(self) -> list[Shipment]:
-        """Return every shipment. Used for tests and bulk views."""
-        self._load()
-        return list(self._shipments.values())
+        """
+        Return every shipment from PostgreSQL.
+
+        Used by tests, API routes, and bulk shipment views.
+        """
+
+        with SessionLocal() as db:
+            statement = select(ShipmentRecord).order_by(
+                ShipmentRecord.shipment_id
+            )
+
+            records = db.scalars(statement).all()
+
+            return [
+                self._record_to_shipment(record)
+                for record in records
+            ]
 
     def list_shipment_ids(self) -> list[str]:
         """
-        Return all shipment ids, sorted.
-        Used to populate the shipment dropdown in the Streamlit UI.
+        Return all shipment IDs sorted alphabetically.
+
+        Used to populate shipment selectors in the frontend.
         """
-        self._load()
-        return sorted(self._shipments.keys())
+
+        with SessionLocal() as db:
+            statement = select(
+                ShipmentRecord.shipment_id
+            ).order_by(
+                ShipmentRecord.shipment_id
+            )
+
+            return list(db.scalars(statement).all())
 
 
 @lru_cache
 def get_shipment_service() -> ShipmentService:
-    """Return the shared ShipmentService singleton."""
+    """
+    Return the shared ShipmentService singleton.
+
+    The service itself does not retain database sessions. Every method opens
+    and closes its own session safely.
+    """
+
     return ShipmentService()

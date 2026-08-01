@@ -37,6 +37,7 @@ class ShipmentStatus(str, Enum):
     returned = "returned"  # sent back to origin
 
 
+
 class ExceptionType(str, Enum):
     """
     The category of exception affecting this shipment.
@@ -118,7 +119,8 @@ class Shipment(BaseModel):
             "sla": {
                 "promised_delivery": "2024-03-16T18:00:00Z",
                 "penalty_per_day_sar": 500.0,
-                "max_liability_sar": 50000.0
+                "max_liability_sar": 50000.0,
+                "shipment_value_sar": Decimal("0")
             },
             "customer_name": "Riyadh Electronics Trading Co.",
             "customer_contact": "ops@riyadhelectronics.sa",

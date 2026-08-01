@@ -27,6 +27,7 @@ from app.api.deps import limiter
 from app.api.routes_answer import router as answer_router
 from app.api.routes_documents import router as documents_router
 from app.api.routes_investigations import router as investigations_router
+from app.api.routes_shipments import router as shipments_router
 from app.config import settings
 
 
@@ -75,12 +76,13 @@ app.add_middleware(
 )
 
 # --- Routes ---
-app.include_router(answer_router)
-app.include_router(investigations_router)
-app.include_router(documents_router)
+app.include_router(answer_router, prefix="/api")
+app.include_router(investigations_router, prefix="/api")
+app.include_router(documents_router, prefix="/api")
+app.include_router(shipments_router, prefix="/api")
 
 
-@app.get("/health", tags=["health"])
+@app.get("/api/health", tags=["health"])
 async def health() -> dict:
     """
     Unauthenticated health check.

@@ -1,0 +1,3 @@
+# Copy to terraform.tfvars and fill in. NEVER commit terraform.tfvars.
+anthropic_api_key = "sk-ant-your-key"
+api_key           = "your-app-api-key"
