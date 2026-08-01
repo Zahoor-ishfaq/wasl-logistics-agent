@@ -16,3 +16,12 @@ output "frontend_url" {
 output "frontend_bucket" {
   value = aws_s3_bucket.frontend.bucket
 }
+output "rds_endpoint" {
+  description = "PostgreSQL RDS endpoint"
+  value       = aws_db_instance.postgres.address
+}
+
+output "rds_secret_arn" {
+  description = "AWS Secrets Manager ARN containing RDS credentials"
+  value       = aws_db_instance.postgres.master_user_secret[0].secret_arn
+}

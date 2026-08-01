@@ -10,8 +10,9 @@ Usage anywhere in the codebase:
 """
 
 from functools import lru_cache
+from urllib.parse import quote
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,7 +33,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="ignore",  # silently ignore unknown env vars
+        extra="ignore",
     )
 
     # ------------------------------------------------------------------
@@ -45,13 +46,14 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # LLM provider (Anthropic Claude)
     # ------------------------------------------------------------------
-    anthropic_api_key: str = Field(..., description="Anthropic API key — required")
+    anthropic_api_key: str = Field(
+        ...,
+        description="Anthropic API key — required",
+    )
     anthropic_model: str = "claude-sonnet-4-6"
-    llm_temperature: float = 0.0  # deterministic for RAG and agent reasoning
+    llm_temperature: float = 0.0
     llm_max_tokens: int = 2048
 
-    # Daily cost cap in USD. Requests are rejected once this is exceeded.
-    # Set to 0.0 to disable the cap (not recommended in production).
     llm_daily_cost_cap_usd: float = Field(
         default=5.0,
         description="Maximum LLM spend per day in USD. Protects budget.",
@@ -60,10 +62,8 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # Embeddings
     # ------------------------------------------------------------------
-    # sentence-transformers model — runs locally, no API key needed.
-    # all-MiniLM-L6-v2 is small (~80MB), fast on CPU, good quality.
     embedding_model: str = "all-MiniLM-L6-v2"
-    embedding_dimension: int = 384  # must match the model above
+    embedding_dimension: int = 384
 
     # ------------------------------------------------------------------
     # Vector store (Chroma)
@@ -71,12 +71,7 @@ class Settings(BaseSettings):
     chroma_persist_directory: str = "chroma_db"
     chroma_collection_name: str = "wasl_knowledge_base"
 
-    # Number of chunks to retrieve per query
     retrieval_top_k: int = 5
-
-    # Minimum similarity score — chunks below this are considered irrelevant.
-    # Range: 0.0 (keep everything) to 1.0 (keep only exact matches).
-    # 0.3 is a reasonable starting point; tune against eval scores.
     retrieval_min_score: float = 0.3
 
     # ------------------------------------------------------------------
@@ -86,10 +81,7 @@ class Settings(BaseSettings):
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 0
-    # Cosine similarity at/above which a cached answer is reused.
-    # 0.95 is deliberately strict so only near-identical questions hit.
     cache_similarity_threshold: float = 0.95
-    # How long a cached answer lives (seconds). 24h default.
     cache_ttl_seconds: int = 86400
 
     # ------------------------------------------------------------------
@@ -97,23 +89,78 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     documents_directory: str = "data/documents"
 
-    # Chunk size in tokens (approximate — splitter uses characters).
-    # 500 tokens ≈ 2000 characters for English prose.
     chunk_size: int = 2000
-    chunk_overlap: int = 200  # ~50 tokens overlap between chunks
+    chunk_overlap: int = 200
 
+    # ------------------------------------------------------------------
+    # JWT authentication
+    # ------------------------------------------------------------------
     jwt_secret_key: str = ""
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
+
     auth_username: str = "admin"
     auth_password_hash: str = ""
-# ------------------------------------------------------------------
-# PostgreSQL database
-# ------------------------------------------------------------------
-    database_url: str = Field(
-    ...,
-    description="PostgreSQL connection URL — required",
-)
+
+    # ------------------------------------------------------------------
+    # PostgreSQL database
+    # ------------------------------------------------------------------
+    #
+    # Local development:
+    #   DATABASE_URL=postgresql+psycopg2://...
+    #
+    # Production / ECS:
+    #   DB_HOST
+    #   DB_PORT
+    #   DB_NAME
+    #   DB_USER
+    #   DB_PASSWORD
+    #
+    # DB_PASSWORD can be injected directly from AWS Secrets Manager.
+    # ------------------------------------------------------------------
+
+    database_url: str = ""
+
+    db_host: str = ""
+    db_port: int = 5432
+    db_name: str = "wasl"
+    db_user: str = ""
+    db_password: str = ""
+    db_sslmode: str = "require"
+
+    @model_validator(mode="after")
+    def configure_database_url(self) -> "Settings":
+        """
+        Use DATABASE_URL when supplied, which keeps local development
+        unchanged.
+
+        In production, build DATABASE_URL from individual environment
+        variables so credentials can be injected securely by ECS and
+        AWS Secrets Manager.
+        """
+
+        if self.database_url:
+            return self
+
+        if self.db_host and self.db_user and self.db_password:
+            username = quote(self.db_user, safe="")
+            password = quote(self.db_password, safe="")
+            database = quote(self.db_name, safe="")
+
+            self.database_url = (
+                f"postgresql+psycopg2://"
+                f"{username}:{password}"
+                f"@{self.db_host}:{self.db_port}/{database}"
+                f"?sslmode={self.db_sslmode}"
+            )
+
+            return self
+
+        raise ValueError(
+            "Database configuration missing. "
+            "Set DATABASE_URL or DB_HOST, DB_USER and DB_PASSWORD."
+        )
+
     # ------------------------------------------------------------------
     # Mock shipment data
     # ------------------------------------------------------------------
@@ -122,35 +169,41 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------
     # API security
     # ------------------------------------------------------------------
-    # The API key clients must send in the X-API-Key header.
-    # Use a strong random string in production.
     api_key: str = Field(
-        ..., description="API key for authenticating clients — required"
+        ...,
+        description="API key for authenticating clients — required",
     )
 
-    # Rate limiting: max requests per minute per IP address
     rate_limit_per_minute: int = 30
 
     # ------------------------------------------------------------------
     # Observability (Langfuse)
     # ------------------------------------------------------------------
-    # Set to False to disable tracing entirely (e.g. in CI tests)
     tracing_enabled: bool = True
-    langfuse_public_key: str = Field(default="", description="Langfuse public key")
-    langfuse_secret_key: str = Field(default="", description="Langfuse secret key")
+
+    langfuse_public_key: str = Field(
+        default="",
+        description="Langfuse public key",
+    )
+    langfuse_secret_key: str = Field(
+        default="",
+        description="Langfuse secret key",
+    )
     langfuse_host: str = "https://cloud.langfuse.com"
 
     # ------------------------------------------------------------------
-    # CORS (for the API)
+    # CORS
     # ------------------------------------------------------------------
-    # Comma-separated list of allowed origins.
-    # Use "*" only in development; never in production.
     cors_origins: str = "http://localhost:3000,http://localhost:8501"
 
     @property
     def cors_origins_list(self) -> list[str]:
         """Parse the comma-separated CORS origins into a list."""
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        return [
+            origin.strip()
+            for origin in self.cors_origins.split(",")
+            if origin.strip()
+        ]
 
 
 @lru_cache
@@ -158,22 +211,9 @@ def get_settings() -> Settings:
     """
     Return the Settings singleton.
 
-    lru_cache means this is only instantiated once — the same object
-    is returned on every subsequent call. This is the pattern FastAPI
-    recommends for settings with Depends().
-
-    Example in a FastAPI route:
-        from app.config import get_settings
-        from fastapi import Depends
-
-        @app.get("/health")
-        def health(settings: Settings = Depends(get_settings)):
-            return {"app": settings.app_name}
+    lru_cache means this is instantiated only once.
     """
     return Settings()
 
 
-# Module-level convenience alias.
-# Import this anywhere you need settings without going through Depends():
-#   from app.config import settings
 settings: Settings = get_settings()
