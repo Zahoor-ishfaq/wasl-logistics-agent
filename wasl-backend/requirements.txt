@@ -24,3 +24,5 @@ numpy
 SQLAlchemy==2.0.51
 alembic==1.18.5
 psycopg2-binary==2.9.12
+PyJWT>=2.8,<3
+bcrypt>=4,<5

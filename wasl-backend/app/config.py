@@ -101,6 +101,12 @@ class Settings(BaseSettings):
     # 500 tokens ≈ 2000 characters for English prose.
     chunk_size: int = 2000
     chunk_overlap: int = 200  # ~50 tokens overlap between chunks
+
+    jwt_secret_key: str = ""
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60
+    auth_username: str = "admin"
+    auth_password_hash: str = ""
 # ------------------------------------------------------------------
 # PostgreSQL database
 # ------------------------------------------------------------------

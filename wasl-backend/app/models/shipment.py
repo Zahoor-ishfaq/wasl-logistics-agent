@@ -6,8 +6,8 @@ Pydantic schema for a shipment record returned by the shipment service.
 This schema deliberately mirrors what a real TMS (Transport Management
 System) API would return. In v1 the shipment service reads from
 data/mock_shipments.json — but because the schema is defined here
-independently, swapping to a real TMS later only requires changing
-the service, not the agent or any other code that uses this model.
+independently, swapping to a real TMS later only requires changing the
+service, not the agent or any other code that uses this model.
 
 The four exception types map directly to the four Saudi exception
 scenarios defined in PRD Section 6:
@@ -35,7 +35,6 @@ class ShipmentStatus(str, Enum):
     delivered = "delivered"
     failed_delivery = "failed_delivery"  # attempt made, consignee not reached
     returned = "returned"  # sent back to origin
-
 
 
 class ExceptionType(str, Enum):
@@ -79,11 +78,13 @@ class SLATerms(BaseModel):
         ...,
         description="The contractually committed delivery date and time.",
     )
+
     penalty_per_day_sar: float = Field(
         default=0.0,
         ge=0.0,
         description="Penalty in SAR for each day beyond the promised delivery date.",
     )
+
     max_liability_sar: float = Field(
         default=50000.0,
         ge=0.0,
@@ -104,7 +105,7 @@ class Shipment(BaseModel):
             "shipment_id": "WSL-20240315-0042",
             "status": "held",
             "exception_type": "customs_hold",
-            "exception_detail": "Missing certificate of origin. HS code 8471.30 requires SASO conformity certificate.",
+            "exception_detail": "Missing certificate of origin.",
             "origin": "Dubai, UAE",
             "destination": "Riyadh, KSA",
             "current_location": {
@@ -119,9 +120,9 @@ class Shipment(BaseModel):
             "sla": {
                 "promised_delivery": "2024-03-16T18:00:00Z",
                 "penalty_per_day_sar": 500.0,
-                "max_liability_sar": 50000.0,
-                "shipment_value_sar": Decimal("0")
+                "max_liability_sar": 50000.0
             },
+            "shipment_value_sar": 312000,
             "customer_name": "Riyadh Electronics Trading Co.",
             "customer_contact": "ops@riyadhelectronics.sa",
             "notes": "Third attempted customs submission. Client notified."
@@ -154,8 +155,8 @@ class Shipment(BaseModel):
         ),
         examples=[
             "Missing certificate of origin. HS code 8471.30 requires SASO conformity certificate.",
-            "Held at Ghuwaifat border crossing for 52 hours. No reason communicated by UAE/KSA border authority.",
-            "Supplier failed to dispatch goods on the agreed date. New dispatch date not yet confirmed.",
+            "Held at Ghuwaifat border crossing for 52 hours.",
+            "Supplier failed to dispatch goods on the agreed date.",
         ],
     )
 
@@ -207,6 +208,12 @@ class Shipment(BaseModel):
         ),
     )
 
+    shipment_value_sar: float = Field(
+        default=0.0,
+        ge=0,
+        description="Declared monetary value of the shipment in SAR.",
+    )
+
     customer_name: str = Field(
         default="",
         description="Name of the end customer or consignee.",
@@ -227,9 +234,9 @@ class ShipmentNotFound(BaseModel):
     """
     Returned by the shipment service when no shipment matches the given ID.
 
-    The agent checks for this before proceeding with investigation —
-    if the shipment does not exist, it cannot investigate and should
-    return a clear message to the user.
+    The agent checks for this before proceeding with investigation — if
+    the shipment does not exist, it cannot investigate and should return
+    a clear message to the user.
     """
 
     shipment_id: str

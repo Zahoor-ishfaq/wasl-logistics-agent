@@ -25,6 +25,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.api.deps import limiter
 from app.api.routes_answer import router as answer_router
+from app.api.routes_auth import router as auth_router
 from app.api.routes_documents import router as documents_router
 from app.api.routes_investigations import router as investigations_router
 from app.api.routes_shipments import router as shipments_router
@@ -80,7 +81,7 @@ app.include_router(answer_router, prefix="/api")
 app.include_router(investigations_router, prefix="/api")
 app.include_router(documents_router, prefix="/api")
 app.include_router(shipments_router, prefix="/api")
-
+app.include_router(auth_router, prefix="/api")
 
 @app.get("/api/health", tags=["health"])
 async def health() -> dict:

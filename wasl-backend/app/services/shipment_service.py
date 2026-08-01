@@ -61,7 +61,7 @@ class ShipmentService:
             status=record.status,
             exception_type=record.exception_type,
             exception_detail=record.exception_detail,
-            shipment_value_sar=record.shipment_value_sar,
+            shipment_value_sar=float(record.shipment_value_sar or 0),
             origin=record.origin,
             destination=record.destination,
             current_location=ShipmentLocation(**record.current_location),
