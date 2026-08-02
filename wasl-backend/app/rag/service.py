@@ -35,7 +35,6 @@ from app.services.cache import get_cache
 from app.services.embeddings import get_embedding_service
 from app.services.llm import get_llm_service
 
-
 logger = logging.getLogger(__name__)
 
 

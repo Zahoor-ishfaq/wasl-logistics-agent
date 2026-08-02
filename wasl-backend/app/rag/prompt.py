@@ -208,18 +208,6 @@ def build_context(citations: list) -> str:
     blocks: list[str] = []
 
     for i, citation in enumerate(citations, start=1):
-        section = (
-            f" — {citation.section}"
-            if citation.section
-            else ""
-        )
-
-        page = (
-            f" — page {citation.page}"
-            if getattr(citation, "page", None)
-            else ""
-        )
-
         blocks.append(
             f"[SOURCE {i}]\n"
             f"Document: {citation.source}\n"

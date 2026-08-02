@@ -224,11 +224,11 @@ async def upload_document(
                 page_chunks
             ):
                 ids.append(
-                    (
+
                         f"{filename}"
                         f"::page_{page_number}"
                         f"::chunk_{chunk_index}"
-                    )
+
                 )
 
                 texts.append(
@@ -298,10 +298,10 @@ async def upload_document(
             chunks
         ):
             ids.append(
-                (
+
                     f"{filename}"
                     f"::chunk_{chunk_index}"
-                )
+
             )
 
             texts.append(
