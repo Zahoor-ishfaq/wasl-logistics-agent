@@ -30,3 +30,14 @@ terraform.tfvars
 
 **/tfplan
 *.tfplan
+
+# Generated architecture files
+*.dot
+*dependency-graph*.svg
+app.svg
+classes_*.svg
+backend_graph.py
+
+# Local infrastructure secrets and overrides
+wasl-backend/infra/app_secrets.tf
+wasl-backend/infra/overrides.json

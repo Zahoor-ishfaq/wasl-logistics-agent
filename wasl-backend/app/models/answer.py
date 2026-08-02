@@ -5,10 +5,10 @@ Pydantic schemas for the RAG answer response.
 
 Every answer the system returns must either:
   - Cite the exact document chunks it drew from, OR
-  - Explicitly decline (when no relevant context was found)
+  - Explicitly decline when no relevant context was found.
 
-This enforces the grounding rule from FR-2: the LLM never answers
-from general knowledge without retrieved context.
+This enforces Wasl's grounding rule: answers must be based on
+retrieved knowledge-base context.
 """
 
 from pydantic import BaseModel, Field
@@ -18,19 +18,8 @@ class Citation(BaseModel):
     """
     A single source chunk that contributed to an answer.
 
-    Each Citation tells the reader exactly where the answer came from —
-    which document, which section, and the exact text that was used.
-    This makes answers verifiable: the ops agent can open the source
-    document and check the claim themselves.
-
-    Example:
-        {
-            "source": "customs_procedure.md",
-            "section": "Required documentation for importing goods",
-            "snippet": "The customs declaration must be submitted electronically
-                        no later than 24 hours before the goods arrive...",
-            "similarity_score": 0.87
-        }
+    The full retrieved chunk is preserved so the RAG layer can reason
+    over all relevant text instead of only the first 500 characters.
     """
 
     source: str = Field(
@@ -47,68 +36,47 @@ class Citation(BaseModel):
 
     snippet: str = Field(
         ...,
-        max_length=500,
-        description="The relevant text from the chunk. Truncated to 500 chars.",
+        max_length=2500,
+        description="The retrieved text chunk used to ground the answer.",
     )
 
     similarity_score: float = Field(
         ...,
         ge=0.0,
         le=1.0,
-        description="How similar this chunk was to the query. 1.0 = identical.",
+        description="Similarity between the chunk and query. 1.0 = identical.",
     )
 
 
 class Answer(BaseModel):
     """
-    The full response returned by the /answer endpoint.
+    Grounded RAG response.
 
-    Two possible states:
-      1. Grounded answer  — text contains the answer, citations is non-empty
-      2. Decline          — answered is False, text explains why, citations is empty
+    answered=True:
+        A grounded answer was produced and citations contain the
+        knowledge-base sources used.
 
-    The LLM is never called when answered is False — no context means no answer.
-
-    Example (grounded):
-        {
-            "answered": true,
-            "text": "The customs declaration must be submitted at least 24 hours
-                     before the goods arrive at the port, per ZATCA rules.",
-            "citations": [
-                {
-                    "source": "customs_procedure.md",
-                    "section": "Pre-clearance",
-                    "snippet": "...submitted electronically no later than 24 hours...",
-                    "similarity_score": 0.91
-                }
-            ]
-        }
-
-    Example (decline):
-        {
-            "answered": false,
-            "text": "I don't have information about that in the knowledge base.",
-            "citations": []
-        }
+    answered=False:
+        The knowledge base did not provide enough applicable evidence.
     """
 
     answered: bool = Field(
         ...,
         description=(
-            "True if the system found relevant context and generated an answer. "
-            "False if no relevant chunks were found and the question was declined."
+            "True when a grounded answer was generated. "
+            "False when the system declined."
         ),
     )
 
     text: str = Field(
         ...,
-        description="The answer text, or a decline message if answered is False.",
+        description="Grounded answer text or decline message.",
     )
 
     citations: list[Citation] = Field(
         default_factory=list,
         description=(
-            "The document chunks used to generate this answer. "
+            "Knowledge-base chunks used to ground the answer. "
             "Empty when answered is False."
         ),
     )

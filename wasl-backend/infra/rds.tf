@@ -85,3 +85,28 @@ resource "aws_db_instance" "postgres" {
     Environment = "production"
   }
 }
+
+# --- Allow ECS task execution role to read the RDS credentials --------------
+
+resource "aws_iam_role_policy" "execution_rds_secret" {
+  name = "${var.project}-rds-secret-access"
+  role = aws_iam_role.execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+
+        Resource = [
+          aws_db_instance.postgres.master_user_secret[0].secret_arn
+        ]
+      }
+    ]
+  })
+}

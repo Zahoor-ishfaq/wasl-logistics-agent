@@ -36,7 +36,10 @@ COPY --from=builder /install /usr/local
 
 COPY --chown=wasl:wasl app/ ./app/
 COPY --chown=wasl:wasl scripts/ ./scripts/
+COPY --chown=wasl:wasl alembic/ ./alembic/
+COPY --chown=wasl:wasl alembic.ini ./
 COPY --chown=wasl:wasl data/ ./data/
+
 
 RUN mkdir -p /app/chroma_db /home/wasl/.cache/huggingface \
     && chown -R wasl:wasl /app/chroma_db /home/wasl/.cache
@@ -46,6 +49,6 @@ USER wasl
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-    CMD python -c "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/health').status==200 else sys.exit(1)"
+    CMD python -c "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/api/health').status==200 else sys.exit(1)"
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

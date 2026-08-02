@@ -1,18 +1,12 @@
 """
 app/rag/retriever.py
 
-The retriever finds the document chunks most relevant to a question.
+Retrieval layer for Wasl RAG.
 
-It's a thin layer over the vector store. Why have it at all, rather
-than calling the vector store directly from the RAG service?
+This module retrieves the most relevant knowledge-base chunks and
+converts them into Citation objects used by the RAG service.
 
-  - It's the single place retrieval behavior lives. If we later add
-    re-ranking, query expansion, or hybrid search, it changes here
-    and nowhere else.
-  - It converts vector-store RetrievedChunk objects into Citation
-    objects (the shape the rest of the app and the API speak in).
-
-The retriever does NOT call the LLM. It only fetches context.
+The retriever does not call the LLM.
 """
 
 from app.config import settings
@@ -21,7 +15,7 @@ from app.services.vector_store import RetrievedChunk, get_vector_store
 
 
 class Retriever:
-    """Finds and returns the most relevant chunks for a query."""
+    """Find the document chunks most relevant to a query."""
 
     def retrieve(
         self,
@@ -31,24 +25,32 @@ class Retriever:
         source_filter: str | None = None,
     ) -> list[RetrievedChunk]:
         """
-        Return the raw retrieved chunks for a query.
+        Retrieve relevant raw chunks.
 
         Args:
-            query:         The question or search text.
-            top_k:         How many chunks to return. Defaults to settings.
-            min_score:     Drop chunks below this similarity. Defaults to settings.
-            source_filter: Restrict search to a single source file
-                           (used by the policy_search tool).
+            query:
+                Search query.
 
-        Returns:
-            A list of RetrievedChunk, highest similarity first,
-            already filtered by min_score.
+            top_k:
+                Maximum number of chunks to return.
+
+            min_score:
+                Minimum similarity score.
+
+            source_filter:
+                Optionally restrict retrieval to one source document.
         """
+
         store = get_vector_store()
+
         return store.search(
             query=query,
             top_k=top_k or settings.retrieval_top_k,
-            min_score=min_score,
+            min_score=(
+                settings.retrieval_min_score
+                if min_score is None
+                else min_score
+            ),
             source_filter=source_filter,
         )
 
@@ -59,20 +61,27 @@ class Retriever:
         min_score: float | None = None,
     ) -> list[Citation]:
         """
-        Retrieve chunks and convert them to Citation objects.
+        Retrieve relevant chunks and preserve their full text.
 
-        Citations are the shape used in Answer responses and the API,
-        so this is what the RAG service consumes.
+        Previously this method used:
 
-        The snippet is truncated to 500 characters to match the
-        Citation schema's max_length.
+            chunk.text[:500]
+
+        That could remove important instructions located later in a
+        retrieved chunk before the LLM ever received them.
         """
-        chunks = self.retrieve(query, top_k=top_k, min_score=min_score)
+
+        chunks = self.retrieve(
+            query=query,
+            top_k=top_k,
+            min_score=min_score,
+        )
+
         return [
             Citation(
                 source=chunk.source,
                 section=chunk.section,
-                snippet=chunk.text[:500],
+                snippet=chunk.text,
                 similarity_score=chunk.similarity_score,
             )
             for chunk in chunks
@@ -84,7 +93,10 @@ _retriever: Retriever | None = None
 
 def get_retriever() -> Retriever:
     """Return the shared Retriever instance."""
+
     global _retriever
+
     if _retriever is None:
         _retriever = Retriever()
+
     return _retriever

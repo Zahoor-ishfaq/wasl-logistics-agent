@@ -161,6 +161,10 @@ resource "aws_ecs_task_definition" "api" {
   cpu                      = "1024"
   memory                   = "3072"
   execution_role_arn       = aws_iam_role.execution.arn
+  depends_on = [
+    aws_iam_role_policy.execution_rds_secret,
+    aws_iam_role_policy.execution_app_secret
+  ]
 
   container_definitions = jsonencode([
     {
@@ -184,8 +188,37 @@ resource "aws_ecs_task_definition" "api" {
       portMappings = [{ containerPort = 8000 }]
       environment = [
         { name = "REDIS_HOST", value = "localhost" },
+
+        { name = "DB_HOST", value = aws_db_instance.postgres.address },
+        { name = "DB_PORT", value = "5432" },
+        { name = "DB_NAME", value = "wasl" },
+        { name = "DB_SSLMODE", value = "require" },
+
         { name = "ANTHROPIC_API_KEY", value = var.anthropic_api_key },
         { name = "API_KEY", value = var.api_key }
+      ]
+
+      secrets = [
+        {
+          name      = "DB_USER"
+          valueFrom = "${aws_db_instance.postgres.master_user_secret[0].secret_arn}:username::"
+        },
+        {
+          name      = "DB_PASSWORD"
+          valueFrom = "${aws_db_instance.postgres.master_user_secret[0].secret_arn}:password::"
+        },
+        {
+          name      = "JWT_SECRET_KEY"
+          valueFrom = "${aws_secretsmanager_secret.app_auth.arn}:JWT_SECRET_KEY::"
+        },
+        {
+          name      = "AUTH_USERNAME"
+          valueFrom = "${aws_secretsmanager_secret.app_auth.arn}:AUTH_USERNAME::"
+        },
+        {
+          name      = "AUTH_PASSWORD_HASH"
+          valueFrom = "${aws_secretsmanager_secret.app_auth.arn}:AUTH_PASSWORD_HASH::"
+        }
       ]
       logConfiguration = {
         logDriver = "awslogs"
