@@ -19,16 +19,19 @@
 ![Docker](https://img.shields.io/badge/Docker-Containers-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI-2088FF?style=flat-square&logo=githubactions&logoColor=white)
 
-Wasl is a logistics control-tower application that combines a grounded knowledge assistant with an approval-gated shipment investigation workflow.
+Wasl is a logistics control-tower application that combines a grounded internal knowledge assistant with an approval-gated shipment investigation workflow.
 
-It is designed around two operational flows:
+An operations user can ask a procedural question, review shipment exceptions, inspect the reasoning trace, and approve or reject a proposed action from one interface. The system retrieves evidence from company policies, applies operational rules, and keeps consequential actions behind a human decision point.
 
-1. **Ask Wasl** answers logistics policy and procedure questions from the internal knowledge base and returns source citations.
-2. **Investigations** evaluates shipment exceptions, applies operational rules, retrieves relevant policy, prepares a recommendation, and stops at a human approval boundary.
+Wasl does not send external messages or execute operational changes automatically.
 
-The system does not send external messages or execute consequential actions automatically.
+---
 
-![Wasl demo](wasl-backend/docs/demo.gif)
+## Demo
+
+![Wasl application walkthrough](wasl-backend/docs/demo.gif)
+
+The walkthrough follows the main operating path: dashboard review, grounded policy question, shipment investigation, and knowledge-base management.
 
 ---
 
@@ -40,18 +43,59 @@ The system does not send external messages or execute consequential actions auto
     <td align="center"><strong>Ask Wasl</strong></td>
   </tr>
   <tr>
-    <td><img src="wasl-backend/docs/dashboard.png" alt="Wasl dashboard"></td>
-    <td><img src="wasl-backend/docs/chat.png" alt="Ask Wasl chat"></td>
+    <td><img src="wasl-backend/docs/dashboard.png" width="100%" alt="Wasl operations dashboard"></td>
+    <td><img src="wasl-backend/docs/chat.png" width="100%" alt="Ask Wasl grounded chat"></td>
   </tr>
   <tr>
     <td align="center"><strong>Investigations</strong></td>
     <td align="center"><strong>Knowledge Base</strong></td>
   </tr>
   <tr>
-    <td><img src="wasl-backend/docs/investigations.png" alt="Wasl investigations"></td>
-    <td><img src="wasl-backend/docs/knowledgebase.png" alt="Wasl knowledge base"></td>
+    <td><img src="wasl-backend/docs/investigations.png" width="100%" alt="Wasl investigation workflow"></td>
+    <td><img src="wasl-backend/docs/knowledgebase.png" width="100%" alt="Wasl knowledge base management"></td>
   </tr>
 </table>
+
+---
+
+## How the system works
+
+Wasl supports two connected operational flows.
+
+### Ask Wasl
+
+A user asks a logistics policy or procedure question. The backend retrieves the most relevant document chunks from PostgreSQL with pgvector, builds a grounded prompt, and calls Claude only when sufficient supporting context exists.
+
+```text
+Question
+  -> authentication and request checks
+  -> local intent / injection handling
+  -> semantic cache lookup
+  -> embedding and pgvector retrieval
+  -> source-aware reranking
+  -> grounded Claude response
+  -> filtered citations
+```
+
+The answer is returned with the source documents used. When the knowledge base does not contain enough evidence, Wasl returns a controlled decline instead of generating an unsupported policy answer.
+
+### Investigations
+
+A user opens a shipment exception. The LangGraph workflow loads the shipment, evaluates the exception, checks SLA and ETA conditions, retrieves relevant policy, and prepares a recommendation.
+
+```text
+Shipment exception
+  -> shipment lookup
+  -> exception assessment
+  -> SLA / ETA evaluation
+  -> policy retrieval
+  -> recommended action
+  -> human approval or rejection
+```
+
+The workflow can also determine that no action is required. Expected delays, such as an approved holiday or port closure, can end without unnecessary escalation.
+
+The `draft_message` tool is draft-only. Approval records an operator decision; it does not send an email or customer notification.
 
 ---
 
@@ -59,98 +103,63 @@ The system does not send external messages or execute consequential actions auto
 
 ![Wasl high-level architecture](wasl-backend/docs/architecture-diagram.png)
 
-The production system is split into four main parts:
+The production system is organized into four main layers:
 
-- **React + Vite frontend** for the dashboard, chat, investigations, and knowledge-base management.
-- **FastAPI backend** for authentication, shipment APIs, document APIs, grounded answers, and investigation workflows.
-- **PostgreSQL + pgvector** for shipment data and persistent document embeddings, with Redis used for semantic caching.
-- **AWS infrastructure** with CloudFront and S3 for the frontend, an Application Load Balancer in front of ECS Fargate, and Amazon RDS for PostgreSQL. Infrastructure is managed with Terraform.
+| Layer | Responsibility |
+|---|---|
+| Frontend | React and Vite interface for dashboard, chat, investigations, and knowledge-base management |
+| Application | FastAPI routes, authentication, shipment services, RAG service, and LangGraph workflow |
+| Data and AI | PostgreSQL, pgvector, Redis, local sentence-transformer embeddings, and Anthropic Claude |
+| Infrastructure | CloudFront, S3, Application Load Balancer, ECS Fargate, RDS, CloudWatch, and Terraform |
 
-### Ask Wasl flow
-
-```text
-User
-  -> React UI
-  -> FastAPI
-  -> RAG service
-  -> Retriever
-  -> PostgreSQL / pgvector
-  -> grounded context
-  -> Claude
-  -> answer + citations
-```
-
-If retrieval does not produce sufficient evidence, Wasl returns a controlled decline instead of asking the model to invent an answer.
-
-### Investigation flow
+### Production request path
 
 ```text
-Shipment exception
+Browser
+  -> CloudFront
+  -> S3-hosted React frontend
+  -> /api/*
+  -> Application Load Balancer
+  -> ECS Fargate
   -> FastAPI
-  -> LangGraph workflow
-  -> shipment lookup
-  -> exception assessment
-  -> policy retrieval
-  -> SLA / ETA logic
-  -> draft recommendation
-  -> human approval boundary
+  -> PostgreSQL / pgvector, Redis, and Anthropic
 ```
 
-The workflow combines deterministic operational rules with LLM reasoning. Policy thresholds and control logic remain rule-based; Claude is used for interpretation, recommendation, and draft generation.
+Alembic manages relational and pgvector schema migrations. Terraform defines the AWS infrastructure.
 
 ---
 
-## Grounded RAG
+## Grounded retrieval
 
-The knowledge layer supports operational policies and SOPs stored as PDF, Markdown, or text documents.
-
-The ingestion path is:
+The knowledge layer accepts PDF, Markdown, and text documents.
 
 ```text
 Document
-  -> text extraction
-  -> chunking + metadata
-  -> sentence-transformer embeddings
+  -> extraction
+  -> chunking and metadata
+  -> all-MiniLM-L6-v2 embeddings
   -> PostgreSQL / pgvector
 ```
 
 Current retrieval behavior includes:
 
-- local `all-MiniLM-L6-v2` embeddings
 - persistent pgvector storage in production
-- source-aware citation filtering
-- compound / facet-aware retrieval for multi-policy questions
+- HNSW vector indexing
+- compound retrieval for multi-policy questions
+- facet-aware reranking
 - bounded conversation history for follow-up questions
 - semantic answer caching with Redis
-- clean decline behavior when supporting context is missing
-- filtering of suspicious retrieved instructions before they reach the LLM
+- one citation entry per model-used source
+- clean decline behavior when evidence is insufficient
+- filtering of suspicious instructions found in retrieved content
 
-PDF uploads are processed page by page. Scanned PDFs without extractable text are rejected rather than silently producing unreliable OCR output.
-
----
-
-## Investigation workflow
-
-The investigation workflow is implemented as a LangGraph state machine.
-
-Operational tools include:
-
-| Tool | Responsibility |
-|---|---|
-| `shipment_lookup` | Load shipment and exception data |
-| `compute_eta` | Calculate ETA / SLA position |
-| `policy_search` | Retrieve relevant operational policy |
-| `draft_message` | Prepare a proposed communication or action |
-
-The graph can determine that no action is required. Expected delays such as an approved closure can therefore terminate without creating an unnecessary escalation.
-
-`draft_message` is intentionally draft-only. Approval records the operator decision, but Wasl does not send an email or customer message itself.
+PDFs are processed page by page so citations can retain page metadata. Scanned PDFs without extractable text are rejected rather than processed with unreliable OCR.
 
 ---
 
 ## Knowledge base
 
-The repository includes a synthetic logistics knowledge base covering:
+The repository contains a synthetic logistics policy set covering:
 
 - shipment exception management
 - customs-hold escalation
@@ -161,79 +170,79 @@ The repository includes a synthetic logistics knowledge base covering:
 - holiday and port-closure continuity
 - high-value shipment controls
 - customer communication standards
-- control-tower incident severity
+- incident severity classification
 
-Documents can also be uploaded and removed through the Knowledge Base UI.
+Documents can be uploaded and removed through the Knowledge Base interface.
 
-Supported upload types:
-
-```text
-.pdf
-.md
-.txt
-```
-
-Maximum upload size: **20 MB**.
+| Property | Value |
+|---|---|
+| Supported formats | `.pdf`, `.md`, `.txt` |
+| Maximum file size | 20 MB |
+| Embedding model | `all-MiniLM-L6-v2` |
+| Vector dimensions | 384 |
+| Production vector store | PostgreSQL + pgvector |
 
 ---
 
 ## Security and control boundaries
 
-The backend includes:
+The application includes:
 
 - JWT authentication
-- legacy API-key compatibility
+- legacy API-key fallback
 - request rate limiting
-- prompt-injection pattern checks
-- local handling for greetings, capability questions, and direct injection attempts
+- prompt-injection pattern detection
+- deterministic local handling for greetings and direct injection attempts
 - retrieved-content filtering
-- source instructions treated as untrusted data
+- untrusted-source prompt boundaries
+- bounded chat history
 - human approval before consequential investigation actions
 
-Secrets are supplied through environment variables and deployment configuration rather than committed application files.
+Application secrets are supplied through environment variables and AWS Secrets Manager rather than committed source files.
 
 ---
 
-## Production deployment
+## AWS operations and monitoring
 
-```text
-Browser
-   |
-CloudFront
-   |
-S3 frontend
-   |
-/api/*
-   |
-Application Load Balancer
-   |
-ECS Fargate
-   |
-FastAPI
-   |
-+-------------------+------------------+
-|                   |                  |
-RDS PostgreSQL      Redis              Anthropic
-+ pgvector          cache              Claude
-```
+Wasl runs as an ECS Fargate service behind an Application Load Balancer. CloudWatch collects service metrics and logs, while Container Insights provides task and container-level visibility.
 
-Terraform provisions the AWS application infrastructure. Alembic manages relational and pgvector schema migrations.
+<table>
+  <tr>
+    <td align="center"><strong>ECS Container Insights</strong></td>
+    <td align="center"><strong>Application Load Balancer Monitoring</strong></td>
+  </tr>
+  <tr>
+    <td><img src="wasl-backend/docs/container-insights.png" width="100%" alt="ECS CPU and memory metrics"></td>
+    <td><img src="wasl-backend/docs/monitering.png" width="100%" alt="ALB response time and request metrics"></td>
+  </tr>
+</table>
+
+The monitoring setup covers:
+
+- ECS CPU utilization
+- ECS memory utilization
+- ALB target response time
+- request volume
+- application and Redis logs
+- task and container visibility through Container Insights
+
+The current workload is lightly utilized, while the latency view makes expensive RAG and LLM requests visible separately from normal API traffic.
 
 ---
 
 ## Quality and CI
 
-The repository contains unit, route, RAG, agent, security, and pgvector integration tests.
+The backend test suite covers routes, authentication, agent tools, RAG behavior, security controls, document ingestion, and pgvector integration.
 
-Latest verified test run:
+Latest verified result:
 
 ```text
-120 passed
+120 tests passed
 76% total coverage
 98% coverage for app/rag/service.py
 ```
 
-CI checks include:
+GitHub Actions runs:
 
 ```text
 Ruff linting
@@ -243,7 +252,7 @@ coverage gate >= 70%
 pgvector-enabled PostgreSQL service
 ```
 
-A separate golden-set evaluation harness is kept under `wasl-backend/evals/` for RAG and agent regression checks.
+A separate golden-set evaluation harness is maintained under `wasl-backend/evals/` for RAG and agent regression checks.
 
 ```bash
 python evals/run_eval.py
@@ -258,17 +267,17 @@ python evals/compare.py
 |---|---|
 | Frontend | React, Vite |
 | API | FastAPI |
-| Authentication | JWT + API-key fallback |
+| Authentication | JWT with API-key fallback |
 | Agent workflow | LangGraph |
 | LLM | Anthropic Claude |
-| Embeddings | sentence-transformers / `all-MiniLM-L6-v2` |
+| Embeddings | sentence-transformers, `all-MiniLM-L6-v2` |
 | Vector search | PostgreSQL + pgvector |
 | Cache | Redis |
 | Database | PostgreSQL |
 | Migrations | Alembic |
 | Containers | Docker |
 | Infrastructure | Terraform |
-| Cloud | AWS S3, CloudFront, ALB, ECS Fargate, RDS |
+| Cloud | AWS S3, CloudFront, ALB, ECS Fargate, RDS, CloudWatch |
 | Testing | pytest |
 | Linting | Ruff |
 | CI | GitHub Actions |
@@ -288,19 +297,19 @@ wasl-logistics-agent/
 |   |
 |   |-- app/
 |   |   |-- agent/            LangGraph workflow and nodes
-|   |   |-- api/              auth, shipment, document, answer and investigation routes
+|   |   |-- api/              authentication, shipment, document, answer and investigation routes
 |   |   |-- models/           API and workflow models
 |   |   |-- observability/    tracing
-|   |   |-- rag/              prompt, retrieval and grounded answer service
+|   |   |-- rag/              prompting, retrieval and grounded answer service
 |   |   |-- services/         embeddings, LLM, cache, shipments and vector storage
 |   |   |-- tools/            investigation tools
 |   |   |-- database.py
 |   |   |-- db_models.py
 |   |   `-- main.py
 |   |
-|   |-- alembic/              database and pgvector migrations
+|   |-- alembic/              relational and pgvector migrations
 |   |-- data/                 synthetic shipments and knowledge documents
-|   |-- docs/                 architecture, PRD, threat model, demo and screenshots
+|   |-- docs/                 architecture, requirements, threat model, demo and screenshots
 |   |-- evals/                golden-set evaluation and regression results
 |   |-- infra/                Terraform AWS infrastructure
 |   |-- scripts/              ingestion, seeding and deployment utilities
@@ -332,7 +341,6 @@ wasl-logistics-agent/
 
 ```bash
 cd wasl-backend
-
 python -m venv .venv
 
 # Windows
@@ -344,7 +352,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Create `.env` from `.env.example`, configure the required application and database variables, then run:
+Create `.env` from `.env.example`, configure the application and database variables, then run:
 
 ```bash
 alembic upgrade head
@@ -352,7 +360,7 @@ python scripts/ingest.py
 uvicorn app.main:app --reload
 ```
 
-FastAPI documentation is available at:
+FastAPI documentation:
 
 ```text
 http://localhost:8000/docs
@@ -371,7 +379,7 @@ Create `.env` from `.env.example`, configure the backend API settings, then run:
 npm run dev
 ```
 
-The Vite development server runs on:
+Frontend development server:
 
 ```text
 http://localhost:5173
@@ -381,15 +389,22 @@ http://localhost:5173
 
 ## Documentation
 
-Additional project documentation is maintained in:
-
-- `wasl-backend/docs/ARCHITECTURE.md` — architecture notes and technical design
-- `wasl-backend/docs/PRD.md` — product requirements
-- `wasl-backend/docs/THREAT_MODEL.md` — security assumptions, threats, and mitigations
-- `wasl-backend/infra/DEPLOY.md` — AWS deployment notes
+| Document | Description |
+|---|---|
+| [Architecture](wasl-backend/docs/ARCHITECTURE.md) | System components, data flow, RAG pipeline, agent workflow, and deployment design |
+| [Product Requirements](wasl-backend/docs/PRD.md) | Product scope, users, requirements, constraints, and success criteria |
+| [Threat Model](wasl-backend/docs/THREAT_MODEL.md) | Trust boundaries, prompt-injection risks, security controls, and residual risks |
+| [Deployment Guide](wasl-backend/infra/DEPLOY.md) | Terraform and AWS deployment notes |
+| [Video Walkthrough](wasl-backend/docs/vid/WASL-walkthrough.mp4) | Short walkthrough of the deployed application and core workflows |
 
 ---
 
 ## Scope
 
-Wasl is a reference implementation of an AI-assisted logistics operations workflow. The project focuses on retrieval, investigation, operational reasoning, approval boundaries, and production deployment rather than attempting to reproduce the full feature set of a commercial transportation-management or control-tower platform.
+Wasl is a reference implementation of an AI-assisted logistics operations workflow. It focuses on grounded retrieval, shipment investigation, operational reasoning, approval boundaries, production deployment, and observability rather than reproducing the full scope of a commercial transportation-management platform.
+
+---
+
+## Author
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Zahoor_Ishfaq-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/zahoor-ishfaq/)

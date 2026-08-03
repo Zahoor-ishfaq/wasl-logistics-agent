@@ -1,110 +1,171 @@
 # Product Requirements Document — Wasl
 
-**Status:** Draft v1.0
-**Owner:** Zahoor Ishfaq
-**Last updated:** 2026-07-28
+**Status:** v1 implemented  
+**Owner:** Zahoor Ishfaq  
+**Last updated:** 2026-08-03
 
----
+## 1. Purpose
 
-## 1. Problem
+Wasl is an AI-assisted logistics control tower for two recurring operational tasks:
 
-Logistics operations teams run on knowledge that is scattered and slow to access. Standard operating procedures, carrier contracts, customs requirements, and exception-handling rules live across PDFs, shared drives, and people's heads. When an exception occurs — a shipment stalls, a cold-chain breaks, an SLA is at risk — an operator has to manually pull the shipment's status from one system, find the relevant policy in a document, check the contract for the SLA terms, and decide what to do. This is slow, inconsistent between operators, and does not scale with volume.
+1. answering policy and procedure questions from internal documents with source citations;
+2. investigating shipment exceptions and preparing an operational recommendation for human approval.
 
-The cost is concrete: delayed exception handling causes SLA breaches and penalty payments; inconsistent decisions create compliance risk; and senior staff spend time answering the same procedural questions instead of doing higher-value work.
+The system is intentionally bounded. It supports operators with retrieval, reasoning, and drafting, but it does not send external communications or execute operational changes autonomously.
 
-## 2. Goal
+## 2. Problem
 
-Give operations staff a single assistant that (a) answers procedural questions from the company's own documents with traceable sources, and (b) autonomously investigates shipment exceptions by combining live shipment data with policy and contract knowledge, then proposes an action for human approval.
+Shipment exceptions are often investigated across separate sources: shipment records, SOPs, customs procedures, SLA policies, and escalation rules. Operators must find the relevant information, determine which policy applies, and decide what action is required.
 
-The system does not replace the operator. It compresses the investigation work — data lookup, policy retrieval, SLA checking, drafting — into one step and leaves the decision with a human.
+This creates three practical problems:
 
-## 3. Non-goals
+- slow exception handling;
+- inconsistent decisions between operators;
+- weak traceability between a recommendation and the policy that supports it.
 
-- **Not** an autonomous system that sends external communications or modifies records without human approval. Every outbound action is drafted and held for sign-off.
-- **Not** a replacement for the TMS/WMS systems of record. Wasl reads from them; it is not the source of truth.
-- **Not** a general-purpose chatbot. Scope is bounded to logistics operations knowledge and the connected tools.
-- **Not** a forecasting or route-optimization product. Those are separate problem domains.
+Wasl brings those steps into one workflow.
 
-## 4. Users
+## 3. Users
 
-| User | Need | How Wasl serves it |
-|---|---|---|
-| Operations agent | Fast, correct answers to "what do I do when…" | RAG over SOPs and contracts, with citations |
-| Operations agent | Investigate a stalled/exception shipment quickly | Agent pulls status + policy + SLA, drafts response |
-| Team lead | Consistent decisions across the team | Answers grounded in one canonical document set |
-| Compliance | Auditable, traceable reasoning | Every answer cites sources; every action is logged |
+| User | Primary need |
+|---|---|
+| Operations user | Find the correct procedure quickly |
+| Operations user | Investigate an exception and understand the next action |
+| Team lead | Apply escalation rules consistently |
+| Reviewer / compliance user | See the evidence behind an answer or recommendation |
 
-## 5. Scope — v1
+## 4. v1 capabilities
 
-### In scope
-1. Document ingestion pipeline for the operations knowledge base (PDF, DOCX, plain text).
-2. Retrieval-augmented question answering with inline source citations.
-3. A multi-step agent that, given a shipment reference, retrieves its status via a tool, identifies exceptions, retrieves the governing policy and SLA, and drafts a recommended action.
-4. Human-in-the-loop approval gate before any drafted action is marked as "to send."
-5. REST API exposing the above.
-6. A minimal web interface for querying and reviewing agent output.
+### Grounded knowledge assistant
 
-### Deferred (post-v1)
-- Live integration with a production TMS (v1 uses a mock shipment service with representative data).
-- Multimodal document/photo intelligence (damage detection on delivery photos, field extraction from scanned notes) — designed as a pluggable module, not built in v1.
-- Multi-tenant support.
+Wasl can:
 
-## 6. Reference exception scenarios
+- ingest `.pdf`, `.md`, and `.txt` documents;
+- extract and chunk document text with metadata;
+- create local sentence-transformer embeddings;
+- store and retrieve vectors with PostgreSQL + pgvector;
+- answer questions using retrieved evidence;
+- return only model-used source citations;
+- decline when the knowledge base does not provide sufficient support;
+- retain bounded conversation context for follow-up questions.
 
-These four scenarios are drawn from documented, recurring causes of shipment disruption in the Saudi market and are used to validate FR-3 (exception investigation) and to build the evaluation set (ADR-0006). They are illustrative test cases, not a claim to have observed them at a specific company.
+### Shipment investigation
 
-**Scenario A — Customs / documentation hold.** Saudi customs clearance runs through ZATCA's FASAH platform, which requires pre-clearance digital documentation for every shipment; a mismatched HS code or an incomplete commercial invoice (missing the importer's Commercial Registration number or product description) is a common, well-documented trigger for a customs hold. The agent should identify the hold, retrieve the specific documentation requirement, and draft an internal request to the party who can supply the missing item — not a customer-facing message, since the cause is internal.
+Given a shipment exception, Wasl can:
 
-**Scenario B — Expected holiday-period closure.** Government and customs offices in Saudi Arabia and the wider Gulf slow substantially or close during religious holidays such as Eid al-Adha, and clearance, document processing, and delivery can be delayed as a direct, expected consequence. The agent must distinguish this from a genuine exception: if a delay coincides with a known closure window, the correct output is "expected delay, monitor" rather than an escalation. This scenario specifically tests whether the agent avoids false-positive escalations.
+- retrieve shipment data;
+- classify and assess the exception;
+- evaluate ETA / SLA conditions;
+- retrieve applicable policy;
+- prepare a recommended action;
+- draft a proposed communication;
+- stop at an approval gate for a human decision.
 
-**Scenario C — Cross-border delay with unclear cause.** Land shipments crossing GCC borders can be held for extended periods — in some documented cases, several days to over a week — for reasons that are not always communicated by the border authority. Because the cause is external and not resolvable by the company, the correct agent behavior is escalation for visibility and customer communication, not an attempt to diagnose a root cause it cannot access.
+The workflow can also determine that no action is required.
 
-**Scenario D — Upstream supplier delay.** Distinct from a carrier-side exception: a shipment is delayed because a supplier failed to deliver goods or documentation on time, not because of anything in transit. The agent must recognize this as a different category (vendor performance, not carrier performance) and route the drafted action accordingly — typically a vendor-facing follow-up rather than a customer or carrier notice.
+### Knowledge-base management
 
-## 7. Functional requirements
+Authorized users can upload and remove supported documents through the application. Production document embeddings persist in PostgreSQL + pgvector.
 
-**FR-1 — Ingestion.** The system ingests documents, splits them into retrievable chunks, generates embeddings, and stores them with metadata (source filename, section, page). Re-ingesting an updated document replaces its prior chunks.
+### Security and operational controls
 
-**FR-2 — Grounded answering.** Given a natural-language question, the system retrieves relevant chunks and produces an answer that cites the specific sources used. If retrieval returns nothing relevant, the system says so rather than answering from general knowledge.
+v1 includes:
 
-**FR-3 — Exception investigation.** Given a shipment reference, the agent retrieves current status, determines whether an exception condition exists, retrieves the applicable policy and contractual SLA, and produces a structured assessment (what is wrong, what the policy requires, time to SLA breach, recommended action).
+- JWT authentication;
+- API-key fallback;
+- request rate limiting;
+- prompt-injection checks;
+- filtering of suspicious retrieved instructions;
+- untrusted-content boundaries in the RAG prompt;
+- human approval before consequential actions;
+- application logging and AWS monitoring.
 
-**FR-4 — Tool use.** The agent can call defined tools: shipment lookup, ETA/time calculation, and message drafting. Tool inputs and outputs are validated and logged.
+## 5. Reference exception scenarios
 
-**FR-5 — Human approval.** Any action with external effect (customer notice, escalation) is produced as a draft and requires explicit human approval before being marked actionable. The system never auto-sends in v1.
+The project uses realistic synthetic logistics scenarios to validate behavior:
 
-**FR-6 — Traceability.** Every response records which documents and tool calls produced it. This record is retrievable for audit.
+| Scenario | Expected behavior |
+|---|---|
+| Customs hold | Retrieve customs procedure and apply the correct escalation clock |
+| High-value shipment | Apply high-value controls without transferring unrelated thresholds |
+| Carrier SLA risk | Evaluate SLA policy only when applicable to the cause |
+| Supplier delay | Route escalation to the appropriate origin / supplier workflow |
+| Holiday or port closure | Recognize an expected delay and avoid unnecessary escalation |
+| Cross-border hold | Report confirmed facts and avoid inventing an unknown cause |
 
-## 8. Non-functional requirements
+## 6. Functional requirements
 
-**NFR-1 — Latency.** A grounded answer returns within a few seconds under normal load. A full exception investigation (multiple tool + retrieval steps) completes within a small number of tens of seconds. These are targets for a single-user demo deployment, not production SLAs.
+| ID | Requirement |
+|---|---|
+| FR-1 | Ingest supported operational documents and persist searchable chunks with source metadata |
+| FR-2 | Produce grounded answers with citations and decline unsupported questions |
+| FR-3 | Investigate shipment exceptions using shipment data, policy retrieval, and operational rules |
+| FR-4 | Restrict agent actions to defined and validated tools |
+| FR-5 | Require human approval before a proposed action becomes actionable |
+| FR-6 | Preserve sufficient source, tool, and decision information for review |
+| FR-7 | Support authenticated document upload and deletion |
+| FR-8 | Expose application capabilities through REST APIs and a web interface |
 
-**NFR-2 — Cost.** The system runs within a constrained budget. LLM usage is metered and logged. Cloud infrastructure is provisioned on demand and torn down when not in use; nothing runs idle.
+## 7. Non-functional requirements
 
-**NFR-3 — Security.** User-supplied input is treated as untrusted (see threat model). Secrets are never committed or hardcoded. Retrieved document content that reaches the model is treated as data, not instructions.
+### Reliability
+Unsupported questions must fail safely. A missing policy is preferable to an invented policy.
 
-**NFR-4 — Evaluability.** Answer quality is measured against a fixed evaluation set with reproducible metrics, not assessed ad hoc. A change that regresses those metrics is detectable before deployment.
+### Performance
+Normal APIs should respond quickly. RAG and investigation requests may take longer because they include retrieval and external model inference. Latency is monitored through AWS metrics.
 
-**NFR-5 — Reproducibility.** The full environment builds from source: application via container image, infrastructure via declarative configuration. No manual console setup is required to recreate a deployment.
+### Security
+Secrets must not be committed to source control. User input, retrieved documents, and tool outputs are treated as untrusted data.
 
-## 9. Success criteria
+### Reproducibility
+Application services are containerized. Database changes are managed with Alembic and AWS infrastructure is defined with Terraform.
 
-The v1 is successful if:
+### Evaluability
+RAG, agent, route, security, and pgvector behavior must be covered by automated tests and regression checks.
 
-1. An operator can ask a procedural question and receive a correct, cited answer without opening the source documents themselves.
-2. Given a stalled shipment, the agent produces an assessment and a draft action that a human judges correct and complete on the majority of a defined test set of exception scenarios.
-3. Answer quality is backed by measured evaluation scores (faithfulness, relevance, retrieval precision) committed to the repository, not by assertion.
-4. The entire system can be deployed and torn down reproducibly, and the total run cost stays within budget.
-5. The reasoning behind every architectural decision is documented and defensible.
+## 8. Production architecture
 
-## 10. Assumptions
+The current deployment uses:
 
-- A representative document set is available for the knowledge base (real or realistic synthetic logistics documents).
-- Shipment data can be represented by a mock service with a realistic schema; production TMS integration is a later concern.
-- A single foundation-model provider is sufficient for v1; provider abstraction is desirable but not required initially.
+- React + Vite frontend;
+- Amazon S3 + CloudFront;
+- FastAPI on ECS Fargate behind an Application Load Balancer;
+- Amazon RDS PostgreSQL with pgvector;
+- Redis semantic cache;
+- Anthropic Claude for grounded reasoning and drafting;
+- CloudWatch and ECS Container Insights for operational monitoring;
+- Terraform for infrastructure management;
+- GitHub Actions for CI.
 
-## 11. Open questions
+## 9. Out of scope
 
-- Which retrieval strategy (dense-only vs. hybrid with keyword) is warranted given the document set size? To be decided empirically during Phase 1, measured against the evaluation set.
-- Is a reranking step worth its latency cost at this scale? Same — decide on evidence.
-- What is the right chunking granularity for procedural documents where a rule may span a section? To be tuned against retrieval-precision metrics.
+The current version does not provide:
+
+- autonomous sending of email, SMS, or customer notifications;
+- autonomous modification of external TMS / ERP systems;
+- route optimization or demand forecasting;
+- OCR for scanned documents;
+- multi-tenant isolation;
+- a production integration with a third-party transportation-management platform.
+
+## 10. Success criteria
+
+v1 is considered successful when:
+
+1. supported procedural questions return useful, cited answers;
+2. unsupported questions decline without fabricated policy;
+3. shipment scenarios route to the correct operational workflow;
+4. multi-policy questions preserve policy applicability boundaries;
+5. consequential actions remain behind human approval;
+6. the application can be deployed reproducibly from source;
+7. automated tests and monitoring provide evidence of system behavior.
+
+## 11. Current verification
+
+The latest verified backend test run contains:
+
+- **120 passing tests**
+- **76% total coverage**
+- **98% coverage for the RAG service**
+
+The repository also contains a golden-set evaluation harness for RAG and agent regression testing.
